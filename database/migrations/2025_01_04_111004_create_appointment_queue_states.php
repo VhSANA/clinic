@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rooms', function (Blueprint $table) {
+        Schema::create('appointment_queue_states', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->string('patient_capacity');
-            $table->string('personnel_capacity');
+            $table->string('state');
             $table->timestamps();
         });
     }
@@ -25,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rooms');
+        Schema::dropDatabaseIfExists('appointment_queue_states');
     }
 };

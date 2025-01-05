@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Faker\Factory as FakerFactory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -23,22 +24,32 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
-        ];
-    }
+        $faker = FakerFactory::create('fa_IR');
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        $jobTitles = ['پزشک','بیمار','منشی','صندوق دار','دستیار پزشک'];
+        $jobInt = array_rand($jobTitles);
+
+        $degrees = ['پزشکی','لیاسنس پرستاری','لیسانس حسابداری','لیاسنس','فوق لیسانس'];
+        $degreesInt = array_rand($degrees);
+
+        $gender = ['male', 'female'];
+        $genderInt = array_rand($gender);
+
+        return [
+            'code' => Str::random(10),
+            'full_name' => "$faker->firstName $faker->lastName",
+            'father' => $faker->firstName,
+            'username' => $faker->userName,
+            'id_number' => $faker->nationalCode(),
+            'mobile' => '09' . random_int(100000000, 999999999),
+            'home_number' => random_int(10000000, 99999999),
+            'relative_number' => '09' . random_int(100000000, 999999999),
+            'relative_name' => $faker->name,
+            'user_title' => $jobTitles[$jobInt],
+            'degree' => $degrees[$degreesInt],
+            'upload_degree' => 'localstorage://' . Str::random(),
+            'gender' => $gender[$genderInt],
+            'password' => Hash::make('password')
+        ];
     }
 }

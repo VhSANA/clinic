@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rooms', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->string('patient_capacity');
-            $table->string('personnel_capacity');
-            $table->timestamps();
+        Schema::create('actionType_service', function (Blueprint $table) {
+            $table->foreignId('medical_service_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('treatment_action_type_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
         });
     }
 
@@ -25,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rooms');
+        Schema::dropDatabaseIfExists('actionType_service');
     }
 };
