@@ -18,20 +18,16 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'full_name',
-        'password',
-        'code',
-        'is_personnel',
         'username',
-        'id_number',
+        'full_name',
+        'national_code',
         'mobile',
-        'home_number',
-        'relative_number',
-        'relative_name',
         'user_title',
-        'degree',
-        'upload_degree',
+        'rules',
         'gender',
+        'locked_out_date',
+        'locked_out_until',
+        'password',
     ];
 
     /**
@@ -58,6 +54,6 @@ class User extends Authenticatable
     // relations
     public function rules()
     {
-        return $this->hasMany(Rule::class);
+        return $this->belongsToMany(Rule::class);
     }
 }

@@ -26,28 +26,18 @@ class UserFactory extends Factory
     {
         $faker = FakerFactory::create('fa_IR');
 
-        $jobTitles = ['پزشک','بیمار','منشی','صندوق دار','دستیار پزشک'];
-        $jobInt = array_rand($jobTitles);
-
-        $degrees = ['پزشکی','لیاسنس پرستاری','لیسانس حسابداری','لیاسنس','فوق لیسانس'];
-        $degreesInt = array_rand($degrees);
+        $userTitles = ['جناب آقای ','سرکار خانم '];
+        $userTitleInt = array_rand($userTitles);
 
         $gender = ['male', 'female'];
         $genderInt = array_rand($gender);
 
         return [
-            'code' => Str::random(10),
             'full_name' => "$faker->firstName $faker->lastName",
-            'father' => $faker->firstName,
             'username' => $faker->userName,
-            'id_number' => $faker->nationalCode(),
+            'national_code' => $faker->nationalCode(),
             'mobile' => '09' . random_int(100000000, 999999999),
-            'home_number' => random_int(10000000, 99999999),
-            'relative_number' => '09' . random_int(100000000, 999999999),
-            'relative_name' => $faker->name,
-            'user_title' => $jobTitles[$jobInt],
-            'degree' => $degrees[$degreesInt],
-            'upload_degree' => 'localstorage://' . Str::random(),
+            'user_title' => $userTitles[$userTitleInt],
             'gender' => $gender[$genderInt],
             'password' => Hash::make('password')
         ];
