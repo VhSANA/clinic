@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('username');
             $table->string('full_name');
-            $table->string('title');
-            $table->string('sub_title');
+            $table->string('national_code');
+            $table->string('mobile');
+            $table->string('user_title');
+            $table->enum('gender', ['male', 'female'])->default('male');
             $table->timestamp('locked_out_date')->nullable();
             $table->timestamp('locked_out_until')->nullable();
             $table->string('password');
