@@ -5,10 +5,8 @@ namespace App\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
-class PasswordValidation implements ValidationRule
+class MobileValidation implements ValidationRule
 {
     /**
      * Run the validation rule.
@@ -19,14 +17,15 @@ class PasswordValidation implements ValidationRule
     {
         $validator = Validator::make(
             [$attribute => $value],
-            [ $attribute => [
-                    Password::min(5)
-                ]
+            [
+                $attribute => [
+                    'required',
+                    'regex:/^(?:0|98|\+98|\+980|0098|098|00980)?(9\d{9})$/'
+                ],
             ],
             [
-                'required' => 'وارد نمودن رمزعبور الزامیست.',
-                'confirmed' => 'تکرار رمز عبور با خود رمزعبور مطابقت ندارد.',
-                'min' => 'رمز عبور باید حداقل شامل 5 کاراکتر باشد.',
+                'required' => 'وارد نمودن شماره موبایل الزامیست.',
+                'regex' => 'شماره موبایل وارد شده معتبر نیست.',
             ]
         );
 

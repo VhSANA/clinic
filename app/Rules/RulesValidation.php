@@ -6,9 +6,8 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
-class PasswordValidation implements ValidationRule
+class RulesValidation implements ValidationRule
 {
     /**
      * Run the validation rule.
@@ -19,14 +18,17 @@ class PasswordValidation implements ValidationRule
     {
         $validator = Validator::make(
             [$attribute => $value],
-            [ $attribute => [
-                    Password::min(5)
+            [
+                $attribute => [
+                    'required',
+                    'string',
+                    Rule::exists('rules', 'id'),
                 ]
             ],
             [
-                'required' => 'وارد نمودن رمزعبور الزامیست.',
-                'confirmed' => 'تکرار رمز عبور با خود رمزعبور مطابقت ندارد.',
-                'min' => 'رمز عبور باید حداقل شامل 5 کاراکتر باشد.',
+                'required' => 'انتخاب مقام برای پرسنل الزامیست.',
+                'exists' => 'از گزینه های موجود استفاده نمایید.',
+                'unique' => 'l,',
             ]
         );
 

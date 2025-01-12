@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/a', function () {
-    Auth::loginUsingId(1);
-    return 'logged in as admin';
+    $user = Auth::loginUsingId(10);
+    return 'logged in as ' . $user->full_name ;
 });
 
 
