@@ -14,10 +14,16 @@ return new class extends Migration
         Schema::create('personnels', function (Blueprint $table) {
             $table->id();
             $table->string('full_name');
-            $table->string('personnel_code')->nullable();
+            $table->string('personnel_code')->unique()->nullable();
             $table->string('image_url')->nullable();
             $table->foreignId('user_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->timestamps();
+        });
+
+        Schema::create('personnel_user', function (Blueprint $table) {
+            $table->foreignId('personnel_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->unique(['personnel_id', 'user_id']);
         });
     }
 
