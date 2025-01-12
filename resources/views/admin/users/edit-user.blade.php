@@ -95,14 +95,8 @@
                             </div>
                         </div>
                         <div class="mt-5 flex gap-2 px-2 justify-around items-center">
-                            <a href="{{route('users.show', $user->id)}}"
-                                class="rounded-full  bg-red-600 dark:bg-red-800 text-white dark:text-white antialiased font-bold hover:bg-red-800 dark:hover:bg-red-900 px-4 py-2 flex items-center justify-between transition">
-                                لغو ویرایش <x-cancel-icon />
-                            </a>
-                            <button type="submit"
-                                class="rounded-full border-2 border-gray-400 dark:border-gray-700 font-semibold text-black dark:text-white px-4 py-2 hover:bg-gray-900 hover:text-white transition flex justify-center items-center">
-                                ثبت ویرایش  <x-edit-icon />
-                            </button>
+                            <x-app.cancel-btn :route="route('users.show', $user->id)">لغو ویرایش کاربر</x-app.cancel-btn>
+                            <x-app.edit-btn type="button">ویرایش کاربر</x-app.edit-btn>
                         </div>
                     </form>
                 </div>

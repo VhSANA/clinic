@@ -45,15 +45,8 @@
         </div>
 
         <div class="flex justify-evenly mt-3">
-            <button href="{{route('personnel.store')}}" class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between transition w-4/12">
-                افزودن
-                <x-add-icon />
-            </button>
-
-            <a href="{{route('personnel.index')}}"
-                class="rounded-full  bg-red-600 dark:bg-red-800 text-white dark:text-white antialiased font-bold hover:bg-red-800 dark:hover:bg-red-900 px-4 py-2 flex items-center justify-between transition w-4/12">
-                لغو <x-cancel-icon />
-            </a>
+            <x-app.add-btn >ایجاد</x-app.add-btn>
+            <x-app.cancel-btn :route="route('personnel.index')">لغو</x-app.cancel-btn>
         </div>
 
       </form>
