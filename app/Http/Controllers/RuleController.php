@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rule;
+use App\Models\User;
+use App\Rules\PersianTitleValidation;
+use App\Rules\TitleValidation;
 use Illuminate\Http\Request;
 
 class RuleController extends Controller
@@ -12,7 +15,23 @@ class RuleController extends Controller
      */
     public function index()
     {
-        //
+        $rules = Rule::query();
+        $users = User::query();
+
+        // search actions
+        if (request('search')) {
+            $keyword = request('search');
+
+            $rules->where('title', 'like', "%$keyword%")
+                ->orWhere('persian_title', 'like', "%$keyword%")
+                ->orWhere('description', 'like', "%$keyword%");
+        }
+
+        $rules = $rules->latest()->paginate(10);
+
+        return view('admin.rules.all-rules', [
+            'rules' => $rules,
+        ]);
     }
 
     /**
@@ -20,15 +39,31 @@ class RuleController extends Controller
      */
     public function create()
     {
-        //
+        return view('admin.rules.create-rule');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, Rule $rule)
     {
-        //
+        $request->validate([
+            'title' => [new TitleValidation($rule)],
+            'persian_title' => [new PersianTitleValidation($rule)],
+            'description' => ['nullable', 'string']
+        ]);
+
+        // add to database
+        Rule::create([
+            'title' => $request['title'],
+            'persian_title' => $request['persian_title'],
+            'description' => $request['description'],
+        ]);
+
+        // json success message
+        response()->json(['message' => 'done'], 200);
+
+        return redirect(route('rule.index'));
     }
 
     /**
@@ -36,7 +71,9 @@ class RuleController extends Controller
      */
     public function show(Rule $rule)
     {
-        //
+        return view('admin.rules.rule', [
+            'rule' => $rule
+        ]);
     }
 
     /**
@@ -44,7 +81,9 @@ class RuleController extends Controller
      */
     public function edit(Rule $rule)
     {
-        //
+        return view('admin.rules.edit-rule', [
+            'rule' => $rule
+        ]);
     }
 
     /**
@@ -52,7 +91,23 @@ class RuleController extends Controller
      */
     public function update(Request $request, Rule $rule)
     {
-        //
+        $request->validate([
+            'title' => [new TitleValidation($rule)],
+            'persian_title' => [new PersianTitleValidation($rule)],
+            'description' => ['nullable', 'string']
+        ]);
+
+        // add to database
+        $rule->updateOrFail([
+            'title' => $request['title'],
+            'persian_title' => $request['persian_title'],
+            'description' => $request['description'],
+        ]);
+
+        // json success message
+        response()->json(['message' => 'done'], 200);
+
+        return redirect(route('rule.index'));
     }
 
     /**
@@ -60,6 +115,9 @@ class RuleController extends Controller
      */
     public function destroy(Rule $rule)
     {
-        //
+        // TODO add this feature only to super-admin
+        $rule->deleteOrFail();
+
+        return back();
     }
 }

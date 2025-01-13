@@ -22,7 +22,7 @@ class FullnameValidation implements ValidationRule
                     'required',
                     'string',
                     'regex:/^[\x{0600}-\x{06FF}]+[\s]+[\x{0600}-\x{06FF}]+$/u',
-                    'min:3',
+                    'min:2',
                     'max:255'
                 ],
             ],

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PersonnelController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RuleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -28,10 +29,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// add new personnel
-Route::resource('personnel', PersonnelController::class);
 
 // users
 Route::resource('users', UserController::class);
+
+// personnel
+Route::resource('personnel', PersonnelController::class);
+
+// rule
+Route::resource('rule', RuleController::class);
 
 require __DIR__.'/auth.php';

@@ -73,7 +73,7 @@
                 @foreach ($personnels as $personnel)
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                         <th scope="row" class="flex items-center justify-center px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <img class="w-10 h-10 rounded-full" src="{{ is_null($personnel->image_url) ? 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07mCJ6esXL.jpg' : $personnel->image_url }}" alt="profile image of {{ $personnel->full_name }}">
+                            <img class="w-10 h-10 rounded-full" src="{{ profileImageFunction($personnel->user) }}" alt="profile image of {{ $personnel->full_name }}">
                             <div class="ps-3">
                                 <div class="text-base font-semibold">{{ $personnel->full_name }}</div>
                             </div>
