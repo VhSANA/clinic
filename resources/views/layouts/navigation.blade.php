@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('personnel.index')" :active="request()->routeIs('personnel.index')">
                         پرسنل
                     </x-nav-link>
+                    <x-nav-link :href="route('rule.index')" :active="request()->routeIs('rules.index')">
+                        سمت ها و مقام ها
+                    </x-nav-link>
                 </div>
             </div>
 

@@ -8,63 +8,39 @@
             @if (Auth::user()->id == $personnel->user->id)
             <div class="border-b px-4 pb-6">
                 <div class="text-center my-4">
-                    <img class="h-32 w-32 rounded-full border-4 border-white dark:border-gray-800 mx-auto mt-4"
-                            src="{{ profileImageFunction(Auth::user()) }}" alt="profile picture of {{$personnel->full_name}}">
-                    <div class="py-2">
-                        <h3 class="font-bold text-2xl text-gray-800 dark:text-white mb-1">{{ $personnel->full_name }}</h3>
-                    </div>
+                    <x-app.images.profile :model="$personnel">{{ $personnel->full_name }}</x-app.images.profile>
 
-                    <div class=" row flex items-center justify-center">
+                    <div class=" row flex items-center justify-center gap-2">
                         <!-- نام کاربری -->
-                        <div class="ml-1">
-                            <x-input-label for="username" class="text-start my-2" :value="__('نام کاربری')" />
-                            <x-text-input  disabled class="block mt-1 w-full placeholder-gray-300" type="text" value="{{$personnel->user->username}}"  />
-                        </div>
+                        <x-app.input.disabled-inputs name="username" label="نام کاربری مرتبط" :value="$personnel->user->username" />
+
                         <!-- سمت پرسنل -->
-                        <div class="ml-1">
-                            <x-input-label for="personnel_title" class="text-start my-2" :value="__('سمت پرسنل')" />
-                            @if (count($personnel->user->rules))
-                                @foreach ($personnel->user->rules as $rule)
-                                    <x-text-input  disabled class="block mt-1 w-full placeholder-gray-300" type="text" value="{{$rule->persian_title}}"  />
-                                @endforeach
-                            @else
-                                <x-text-input  disabled class="block mt-1 w-full placeholder-gray-300" type="text" value="-"  />
-                            @endif
-                        </div>
+                        @if (count($personnel->user->rules))
+                            @foreach ($personnel->user->rules as $rule)
+                            <x-app.input.disabled-inputs name="rule" label="سمت پرسنل" :value="$rule->persian_title" />
+                            @endforeach
+                        @else
+                            <x-app.input.disabled-inputs name="rule" label="سمت کاربر" value="-" />
+                        @endif
                     </div>
-                    <div class=" row flex items-center justify-center">
+                    <div class=" row flex items-center justify-center gap-2">
                         <!-- شماره پرسنلی -->
-                        <div class="ml-1">
-                            <x-input-label for="personnel_code" class="text-start my-2" :value="__('شماره پرسنلی')" />
-                            <x-text-input  disabled class="block mt-1 w-full placeholder-gray-300" type="number" value="{{$personnel->personnel_code}}"  />
-                        </div>
+                        <x-app.input.disabled-inputs name="personnel_code" label="شماره پرسنلی" :value="$personnel->personnel_code" />
 
                         <!-- شماره موبایل -->
-                        <div class="ml-1">
-                            <x-input-label for="personnel_title" class="text-start my-2" :value="__('شماره موبایل')" />
-                            <x-text-input  disabled class="block mt-1 w-full placeholder-gray-300" type="text" value="{{$personnel->user->mobile}}"  />
-                        </div>
+                        <x-app.input.disabled-inputs name="mobile" label="شماره موبایل" :value="$personnel->user->mobile" />
                     </div>
-                    <div class=" row flex items-center justify-center">
-                        <!-- عنوان پرسنل -->
-                        <div class="ml-1">
-                            <x-input-label for="personnel_title" class="text-start my-2" :value="__('تاریج ایجاد شدن')" />
-                            <x-text-input  disabled class="block mt-1 w-full placeholder-gray-300" type="text" value="{{\Carbon\Carbon::create($personnel->created_at)->toDayDateTimeString()}}"  />
-                        </div>
+                    <div class=" row flex items-center justify-center gap-2">
+                        <!-- تاریخ ایجاد پرسنل -->
+                        <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد پرسنل" :value="$personnel->created_at == null ? '-' : \Carbon\Carbon::create($personnel->created_at)->toDayDateTimeString()" />
 
-                        <div class="ml-1">
-                            <x-input-label for="personnel_title" class="text-start my-2" :value="__('تاریج آخرین ویرایش')" />
-                            <x-text-input  disabled class="block mt-1 w-full placeholder-gray-300" type="text" value="{{$personnel->updated_at == null ? '-' : \Carbon\Carbon::create($personnel->updated_at)->toDayDateTimeString()}}"  />
-                        </div>
+                        <!-- تاریخ ویرایش پرسنل -->
+                        <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش پرسنل" :value="$personnel->updated_at == null ? '-' : \Carbon\Carbon::create($personnel->updated_at)->toDayDateTimeString()" />
                     </div>
                 </div>
                 <div class="flex gap-2 px-2 justify-around items-center">
-                    <form action="{{ route('personnel.destroy', $personnel->id) }}" method="post">
-                        @csrf
-                        @method('DELETE')
-                        <x-app.delete-btn >حذف پرسنل</x-app.delete-btn>
-                    </form>
-                    <x-app.edit-btn :route="route('personnel.edit', $personnel->id)">ویرایش پرسنل</x-app.edit-btn>
+                    <x-app.button.delete-btn :route="route('personnel.destroy', $personnel->id)">حذف پرسنل</x-app.delete-btn>
+                    <x-app.button.edit-btn :route="route('personnel.edit', $personnel->id)">ویرایش پرسنل</x-app.edit-btn>
                 </div>
             </div>
             @else
@@ -80,7 +56,5 @@
             @endif
         </div>
     <!-- Card end -->
-
 </div>
-
 @endsection

@@ -11,50 +11,35 @@
                         @csrf
                         @method('PUT')
                         <div class="flex flex-col items-center justify-center">
-                            <img class="h-32 w-32 rounded-full border-4 border-white dark:border-gray-800 mx-auto my-4"
-                            src="{{ profileImageFunction(Auth::user()) }}" alt="profile image of {{ $personnel->full_name }}">
+                            <div class="flex flex-col items-center justify-center">
+                                {{-- تصویر پروفایل --}}
+                                <x-app.images.profile :model="$personnel">{{ $personnel->full_name }}</x-app.images.profile>
 
-                            {{-- profile image upload--}}
-                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white" for="image_url">تصویر پروفایل</label>
-                            <x-file-input id="image_url" name="image_url" />
-                            <x-input-error :messages="$errors->get('image_url')" class="mt-2" />
-                            </div>
-                            <div class="mt-2">
-                                <div class="flex item-center justify-center">
-                                    <x-text-input  class="block mt-2 w-full placeholder-gray-300 text-center " type="text" name="full_name" value="{{$personnel->full_name}}" />
-                                    <x-input-error :messages="$errors->get('full_name')" class="mt-2" />
-                                </div>
+                                {{-- آپلود تصویر --}}
+                                <x-app.input.all-inputs name="image_url" label="آپلود تصویر جدید" type="file" />
+
+                                {{-- نام کامل --}}
+                                <x-app.input.edit-inputs name="full_name" label="نام و نام خانوادگی" :value="$personnel->full_name" />
                             </div>
                         </div>
-                        <div class=" row flex items-center justify-center">
-                            <div class="ml-1">
-                                <x-input-label for="username" class="text-start my-2" :value="__('نام کاربری')" />
-                                <x-text-input  class="block mt-1 w-full placeholder-gray-300" type="text" value="{{$personnel->user->username}}" name="username"/>
-                                <x-input-error :messages="$errors->get('username')" class="mt-2" />
-                            </div>
+                        <div class=" row flex items-center justify-center gap-2">
+                            {{-- نام کاربری --}}
+                            <x-app.input.edit-inputs name="username" label="نام کاربری" :value="$personnel->user->username" />
 
                             {{-- شماره پرسنلی --}}
-                            <div class="ml-1">
-                                <x-input-label for="personnel_code" class="text-start my-2" :value="__('شماره پرسنلی')" />
-                                <x-text-input  class="block mt-1 w-full placeholder-gray-300" type="number" value="{{$personnel->personnel_code}}"  name="personnel_code" />
-                                <x-input-error :messages="$errors->get('personnel_code')" class="mt-2" />
-                            </div>
+                            <x-app.input.edit-inputs name="username" label="شماره پرسنلی" :value="$personnel->username" />
                         </div>
 
-                        <div class=" row flex items-center justify-center">
-                            <div class="ml-1">
-                                <x-input-label for="created_at" class="text-start my-2" :value="__('تاریج ایجاد شدن')" />
-                                <x-text-input  class="block mt-1 w-full placeholder-gray-300" type="text" value="{{\Carbon\Carbon::create($personnel->created_at)->toDayDateTimeString()}}" disabled />
-                            </div>
+                        <div class=" row flex items-center justify-center gap-2">
+                            <!-- تاریخ ایجاد پرسنل -->
+                            <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد پرسنل" :value="$personnel->created_at == null ? '-' : \Carbon\Carbon::create($personnel->created_at)->toDayDateTimeString()" />
 
-                            <div class="ml-1">
-                                <x-input-label for="updated_at" class="text-start my-2" :value="__('تاریج آخرین ویرایش')" />
-                                <x-text-input  class="block mt-1 w-full placeholder-gray-300" type="text" value="{{$personnel->updated_at == null ? '-' : \Carbon\Carbon::create($personnel->updated_at)->toDayDateTimeString()}}" disabled />
-                            </div>
+                            <!-- تاریخ ویرایش پرسنل -->
+                            <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش پرسنل" :value="$personnel->updated_at == null ? '-' : \Carbon\Carbon::create($personnel->updated_at)->toDayDateTimeString()" />
                         </div>
                         <div class="mt-5 flex gap-2 px-2 justify-around items-center">
-                            <x-app.cancel-btn :route="route('personnel.show', $personnel->id)">لغو ویرایش</x-app.cancel-btn>
-                            <x-app.edit-btn type="button">ثبت ویرایش</x-app.edit-btn>
+                            <x-app.button.cancel-btn :route="route('personnel.show', $personnel->id)">لغو ویرایش</x-app.cancel-btn>
+                            <x-app.button.edit-btn type="button">ثبت ویرایش</x-app.edit-btn>
                         </div>
                     </form>
                 </div>
@@ -73,5 +58,4 @@
         </div>
     <!-- Card end -->
 </div>
-
 @endsection
