@@ -16,8 +16,7 @@ class RuleController extends Controller
     public function index()
     {
         $rules = Rule::query();
-        $users = User::query();
-
+        
         // search actions
         if (request('search')) {
             $keyword = request('search');

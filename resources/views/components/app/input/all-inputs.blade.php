@@ -12,7 +12,7 @@
             <select name="{{$name}}" id="{{$name}}" required class="rounded-lg border-gray-300 w-full placeholder-gray-300 ">
                 {{ $slot }}
             </select>
-            <x-input-error :messages="$errors->get('{{$name}}')" class="mt-2" />
+            <x-input-error :messages="$errors->get($name)" class="mt-2" />
         </div>
         @break
     @case('file')
@@ -33,8 +33,6 @@
     <div class="mt-4">
         <x-input-label for="{{$name}}" :value="__($label)" />
         <x-text-input id="{{$name}}" required class="block mt-1 w-full placeholder-gray-300" type="{{$type}}" name="{{$name}}" :value="old($name)"  autofocus autocomplete="{{$name}}" placeholder="{{$placeholder}}"/>
-        @error($name)
-            <span class="text-red-500 text-sm"><strong>{{ $message }}</strong></span>
-        @enderror
+        <x-input-error :messages="$errors->get($name)" class="mt-2" />
     </div>
 @endswitch

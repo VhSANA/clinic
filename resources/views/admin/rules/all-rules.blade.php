@@ -50,35 +50,35 @@
             </tr>
         </thead>
         <tbody>
-                @foreach ($rules as $rule)
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                        <th scope="row" class="flex items-center justify-center px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            {{ $rule->title }}
-                        </th>
+            @foreach ($rules as $rule)
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                    <th scope="row" class="flex items-center justify-center px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        {{ $rule->title }}
+                    </th>
+                    <td class="px-6 py-4">
+                        {{ $rule->persian_title }}
+                    </td>
+                    @if (is_null($rule->description))
+                        <td class="px-6 py-4">-</td>
+                    @else
                         <td class="px-6 py-4">
-                            {{ $rule->persian_title }}
+                            {{ strlen($rule->description) > 50 ? substr($rule->description, 0, 50) . " ..." : $rule->description }}
                         </td>
-                        @if (is_null($rule->description))
-                            <td class="px-6 py-4">-</td>
-                        @else
-                            <td class="px-6 py-4">
-                                {{ strlen($rule->description) > 50 ? substr($rule->description, 0, 50) . " ..." : $rule->description }}
-                            </td>
-                        @endif
-                        <td class="px-6 py-4 text-center flex items-center justify-center">
-                            <a href="{{route('rule.show', $rule->id)}}" class="font-medium ml-5 text-green-600 dark:text-blue-500 hover:underline">جزییات</a>
-                            <a href="{{route('rule.edit', $rule->id)}}" class="font-medium mx-5 text-blue-600 dark:text-blue-500 hover:underline">ویرایش</a>
-                            <form action="{{route('rule.destroy', $rule->id)}}" method="post">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="font-medium mr-5 text-red-600 dark:text-blue-500 hover:underline">حذف</button>
-                            </form>
-                        </td>
-                    </tr>
+                    @endif
+                    <td class="px-6 py-4 text-center flex items-center justify-center">
+                        <a href="{{route('rule.show', $rule->id)}}" class="font-medium ml-5 text-green-600 dark:text-blue-500 hover:underline">جزییات</a>
+                        <a href="{{route('rule.edit', $rule->id)}}" class="font-medium mx-5 text-blue-600 dark:text-blue-500 hover:underline">ویرایش</a>
+                        <form action="{{route('rule.destroy', $rule->id)}}" method="post">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="font-medium mr-5 text-red-600 dark:text-blue-500 hover:underline">حذف</button>
+                        </form>
+                    </td>
+                </tr>
                 @endforeach
-            @endif
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    @endif
 
     {{-- pagination --}}
     <x-pagination :model="$rules" path="App\Models\Rule">

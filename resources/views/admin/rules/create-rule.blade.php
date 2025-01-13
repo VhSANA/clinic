@@ -6,7 +6,7 @@
             @csrf
             <!-- عنوان انگلیسی -->
             <x-app.input.all-inputs name="title" label="عنوان انگلیسی" placeholder="doctor" />
-            
+
             <!-- عنوان فارسی -->
             <x-app.input.all-inputs name="persian_title" label="عنوان فارسی" placeholder="دکتر" />
 
@@ -15,7 +15,7 @@
 
             <div class="flex justify-evenly mt-3">
                 <x-app.button.add-btn >ایجاد</x-app.add-btn>
-                <x-app.button.cancel-btn :route="route('personnel.index')">لغو</x-app.cancel-btn>
+                <x-app.button.cancel-btn :route="route('rule.index')">لغو</x-app.cancel-btn>
             </div>
         </form>
     </div>

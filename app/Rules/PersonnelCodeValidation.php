@@ -10,7 +10,7 @@ use Illuminate\Validation\Rule;
 
 class PersonnelCodeValidation implements ValidationRule
 {
-    public function __construct(public $user) {}
+    public function __construct(public User $user) {}
     /**
      * Run the validation rule.
      *
@@ -24,7 +24,7 @@ class PersonnelCodeValidation implements ValidationRule
                 $attribute => [
                     'required',
                     'min:3',
-                    Rule::unique('personnels', 'personnel_code')->ignore($this->user->id)
+                    Rule::unique('personnels', 'personnel_code')->ignore($this->user->id, 'user_id')
                 ],
             ],
             [

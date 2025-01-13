@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\PersonnelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RuleController;
@@ -38,5 +39,11 @@ Route::resource('personnel', PersonnelController::class);
 
 // rule
 Route::resource('rule', RuleController::class);
+
+// insurance
+Route::resource('insurance', InsuranceController::class);
+
+// insurance
+Route::resource('insurance', InsuranceController::class);
 
 require __DIR__.'/auth.php';

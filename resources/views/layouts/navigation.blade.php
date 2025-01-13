@@ -21,8 +21,14 @@
                     <x-nav-link :href="route('personnel.index')" :active="request()->routeIs('personnel.index')">
                         پرسنل
                     </x-nav-link>
-                    <x-nav-link :href="route('rule.index')" :active="request()->routeIs('rules.index')">
-                        سمت ها و مقام ها
+                    <x-nav-link :href="route('rule.index')" :active="request()->routeIs('rule.index')">
+                        نقش کاربر
+                    </x-nav-link>
+                    <x-nav-link :href="route('insurance.index')" :active="request()->routeIs('insurance.index')">
+                        بیمه
+                    </x-nav-link>
+                    <x-nav-link :href="route('patient.index')" :active="request()->routeIs('patient.index')">
+                        بیماران
                     </x-nav-link>
                 </div>
             </div>
@@ -84,6 +90,12 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('personnel.index')" :active="request()->routeIs('personnel.index')">
                 پرسنل
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('rule.index')" :active="request()->routeIs('rule.index')">
+                مقام
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('insurance.index')" :active="request()->routeIs('insurance.index')">
+                بیمه
             </x-responsive-nav-link>
         </div>
 

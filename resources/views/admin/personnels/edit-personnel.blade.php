@@ -27,7 +27,7 @@
                             <x-app.input.edit-inputs name="username" label="نام کاربری" :value="$personnel->user->username" />
 
                             {{-- شماره پرسنلی --}}
-                            <x-app.input.edit-inputs name="username" label="شماره پرسنلی" :value="$personnel->username" />
+                            <x-app.input.edit-inputs name="personnel_code" label="شماره پرسنلی" :value="$personnel->personnel_code" />
                         </div>
 
                         <div class=" row flex items-center justify-center gap-2">
