@@ -26,9 +26,7 @@ return new class extends Migration
             $table->timestamp('birth_date');
             $table->enum('gender', ['male', 'female'])->default('male');
             $table->enum('relation_status', ['married', 'single'])->default('single');
-            $table->string('insurance_id');
             $table->string('insurance_number');
-            $table->unique(['national_code', 'passport_code']);
             $table->timestamps();
         });
     }

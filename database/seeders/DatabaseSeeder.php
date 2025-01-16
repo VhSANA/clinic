@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Insurance;
+use App\Models\MedicalServices;
+use App\Models\Patient;
 use App\Models\Personnel;
 use App\Models\Rule;
 use App\Models\User;
@@ -18,8 +21,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory(10)->create();
-        // Rule::factory(5)->create();
-        // Personnel::factory(10)->create();
+        User::factory(6)->create();
+        Rule::factory(5)->create();
+        Personnel::factory(5)->create();
+        Insurance::factory(4)->create();
+        Patient::factory(10)->create();
+        MedicalServices::factory(10)->create();
     }
 }

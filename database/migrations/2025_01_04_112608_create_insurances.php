@@ -18,6 +18,10 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->timestamps();
         });
+
+        Schema::table('patients', function (Blueprint $table) {
+            $table->foreignId('insurance_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+        });
     }
 
     /**
@@ -25,6 +29,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('patients', function (Blueprint $table) {
+            $table->dropColumn('insurance_id');
+        });
         Schema::dropDatabaseIfExists('insurances');
     }
 };

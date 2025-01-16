@@ -52,13 +52,9 @@
                         <th scope="row" class="flex items-center justify-center px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             {{ $insurance->title }}
                         </th>
-                        @if (is_null($insurance->description))
-                            <td class="px-6 py-4">-</td>
-                        @else
-                            <td class="px-6 py-4">
-                                {{ strlen($insurance->description) > 50 ? substr($insurance->description, 0, 50) . " ..." : $insurance->description }}
-                            </td>
-                        @endif
+                        <td class="px-6 py-4">
+                            {{ substrDescription($insurance) }}
+                        </td>
                         <td class="px-6 py-4 text-center flex items-center justify-center">
                             <a href="{{route('insurance.show', $insurance->id)}}" class="font-medium ml-5 text-green-600 dark:text-blue-500 hover:underline">جزییات</a>
                             <a href="{{route('insurance.edit', $insurance->id)}}" class="font-medium mx-5 text-blue-600 dark:text-blue-500 hover:underline">ویرایش</a>

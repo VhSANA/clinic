@@ -84,9 +84,13 @@
                             {{ $user->mobile }}
                         </td>
                         <td class="px-6 py-4">
-                            @foreach ($user->rules as $rule)
-                                {{ $rule->persian_title }}
-                            @endforeach
+                            @if ($user->rules->isEmpty())
+                                -
+                            @else
+                                @foreach ($user->rules as $rule)
+                                    {{ $rule->persian_title }}
+                                @endforeach
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-center flex items-center justify-center">
                             <a href="{{route('users.show', $user->id)}}" class="font-medium ml-5 text-green-600 dark:text-blue-500 hover:underline">جزییات</a>

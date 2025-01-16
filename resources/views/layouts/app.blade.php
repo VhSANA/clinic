@@ -10,6 +10,7 @@
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link type="text/css" rel="stylesheet" href="css/persianDatepicker.css" />
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -32,6 +33,9 @@
                 {{ $slot }}
             </main>
         </div>
+        @yield('script')
         <script src="../path/to/flowbite/dist/flowbite.min.js"></script>
+        <script type="text/javascript" src="js/jquery-1.10.1.min.js"></script>
+        <script type="text/javascript" src="js/persianDatepicker.min.js"></script>
     </body>
 </html>

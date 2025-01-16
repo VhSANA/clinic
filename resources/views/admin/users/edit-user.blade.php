@@ -40,10 +40,10 @@
                         </div>
                         <div class=" row flex items-center justify-center gap-2">
                             <!-- Password -->
-                            <x-app.input.all-inputs name="password" type="password" label="رمزعبور" placeholder="درصورت عدم تغییر خالی بگذارید." />
+                            <x-app.input.edit-inputs name="password" type="password" label="رمزعبور" placeholder="درصورت عدم تغییر خالی بگذارید." value=""/>
 
                             <!-- Confirm Password -->
-                            <x-app.input.all-inputs name="password_confirmation" type="password" label="تکرار رمزعبور" placeholder="درصورت عدم تغییر خالی بگذارید" />
+                            <x-app.input.edit-inputs name="password_confirmation" type="password" label="تکرار رمزعبور"  value="" placeholder="درصورت عدم تغییر خالی بگذارید" />
                         </div>
                         <div class=" row flex items-center justify-center gap-2">
                             <x-app.input.edit-inputs name="national_code" label="کد ملی کاربر" type="number" :value="$user->national_code" />

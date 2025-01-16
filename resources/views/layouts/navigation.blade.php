@@ -30,6 +30,9 @@
                     <x-nav-link :href="route('patient.index')" :active="request()->routeIs('patient.index')">
                         بیماران
                     </x-nav-link>
+                    <x-nav-link :href="route('service.index')" :active="request()->routeIs('service.index')">
+                        خدمات درمانی 
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -96,6 +99,12 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('insurance.index')" :active="request()->routeIs('insurance.index')">
                 بیمه
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('patient.index')" :active="request()->routeIs('patient.index')">
+                بیماران
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('service.index')" :active="request()->routeIs('service.index')">
+                خدمات درمانی
             </x-responsive-nav-link>
         </div>
 

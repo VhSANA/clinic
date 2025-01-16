@@ -20,4 +20,8 @@ class Personnel extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function medicalServices()
+    {
+        return $this->belongsToMany(MedicalServices::class);
+    }
 }

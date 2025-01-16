@@ -14,4 +14,5 @@
             </div>
         </div>
     </div>
+    @yield('script')
 </x-app-layout>

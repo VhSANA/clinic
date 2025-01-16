@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('medical_services', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->text('description');
+            $table->text('description')->nullable();
             $table->string('icon')->nullable();
             $table->boolean('display_in_list')->default(0);
             $table->timestamps();

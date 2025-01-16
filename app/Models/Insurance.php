@@ -15,4 +15,9 @@ class Insurance extends Model
         'icon',
         'description'
     ];
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
 }

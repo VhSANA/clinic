@@ -1,15 +1,19 @@
 <?php
 
 use App\Http\Controllers\InsuranceController;
+use App\Http\Controllers\MedicalServicesController;
+use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PersonnelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\UserController;
+use App\Models\Insurance;
+use App\Models\Patient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/a', function () {
-    $user = Auth::loginUsingId(10);
+    $user = Auth::loginUsingId(7);
     return 'logged in as ' . $user->full_name ;
 });
 
@@ -30,7 +34,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-
 // users
 Route::resource('users', UserController::class);
 
@@ -44,6 +47,9 @@ Route::resource('rule', RuleController::class);
 Route::resource('insurance', InsuranceController::class);
 
 // insurance
-Route::resource('insurance', InsuranceController::class);
+Route::resource('patient', PatientController::class);
+
+// insurance
+Route::resource('service', MedicalServicesController::class);
 
 require __DIR__.'/auth.php';
