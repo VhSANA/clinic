@@ -20,8 +20,8 @@ class Personnel extends Model
     {
         return $this->belongsTo(User::class);
     }
-    public function medicalServices()
+    public function medicalservices()
     {
-        return $this->belongsToMany(MedicalServices::class);
+        return $this->belongsToMany(MedicalServices::class, 'medical_services_personnel')->withPivot('id','estimated_service_time', 'service_price');
     }
 }

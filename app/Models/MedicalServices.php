@@ -19,6 +19,6 @@ class MedicalServices extends Model
     // relations
     public function personnels()
     {
-        return $this->belongsToMany(Personnel::class);
+        return $this->belongsToMany(Personnel::class, 'medical_services_personnel')->withPivot('id','estimated_service_time', 'service_price');
     }
 }

@@ -4,7 +4,9 @@ use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\MedicalServicesController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PersonnelController;
+use App\Http\Controllers\PersonnelServiceController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\UserController;
 use App\Models\Insurance;
@@ -13,7 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/a', function () {
-    $user = Auth::loginUsingId(7);
+    $user = Auth::loginUsingId(1);
     return 'logged in as ' . $user->full_name ;
 });
 
@@ -49,7 +51,14 @@ Route::resource('insurance', InsuranceController::class);
 // insurance
 Route::resource('patient', PatientController::class);
 
-// insurance
+// medicalservices
 Route::resource('service', MedicalServicesController::class);
+
+// rooms
+Route::resource('room', RoomController::class);
+
+// personnel-service
+Route::resource('personnel-service', PersonnelServiceController::class);
+
 
 require __DIR__.'/auth.php';

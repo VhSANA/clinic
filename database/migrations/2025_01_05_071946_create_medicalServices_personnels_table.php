@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('medicalService_personnel', function (Blueprint $table) {
+        Schema::create('medical_services_personnel', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('medical_service_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('medical_services_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('personnel_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->string('estimated_service_time');
             $table->string('service_price');
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropDatabaseIfExists('medicalService_personnel');
+        Schema::dropDatabaseIfExists('medical_services_personnel');
     }
 };
