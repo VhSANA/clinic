@@ -19,8 +19,11 @@ class InsuranceFactory extends Factory
     {
         $faker = FakerFactory::create('fa_IR');
 
+        $insurance = ['ملت','ایران','تامین اجتماعی','نیروهای مسلح','خدمات درمانی',];
+        $int = array_rand($insurance);
+
         return [
-            'title' => "بیمه $faker->firstName",
+            'title' => "بیمه " . $insurance[$int],
             'description' => $faker->realText,
         ];
     }

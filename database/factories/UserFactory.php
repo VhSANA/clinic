@@ -26,8 +26,9 @@ class UserFactory extends Factory
     {
         $faker = FakerFactory::create('fa_IR');
 
-        $userTitles = ['جناب آقای ','سرکار خانم '];
+        $userTitles = ['جناب آقای ', 'سرکار خانم '];
         $userTitleInt = array_rand($userTitles);
+        $title = $userTitles[$userTitleInt];
 
         $gender = ['male', 'female'];
         $genderInt = array_rand($gender);
@@ -37,8 +38,15 @@ class UserFactory extends Factory
             'username' => $faker->userName,
             'national_code' => $faker->nationalCode(),
             'mobile' => '09' . random_int(100000000, 999999999),
-            'user_title' => $userTitles[$userTitleInt],
-            'gender' => $gender[$genderInt],
+            'user_title' => $title,
+            'gender' => function () use ($title) {
+                switch ($title) {
+                    case 'جناب آقای ':
+                        return 'male';
+                    case 'سرکار خانم ':
+                        return 'female';
+                }
+            },
             'password' => Hash::make('password')
         ];
     }

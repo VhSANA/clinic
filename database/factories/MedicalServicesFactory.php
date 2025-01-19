@@ -19,10 +19,13 @@ class MedicalServicesFactory extends Factory
     {
         $faker = FakerFactory::create('fa_IR');
 
+        $services = ['ویزیت','معاینه','زیبایی','لاغری','زالو',];
+        $int = array_rand($services);
+
         return [
-            'name' => $faker->jobTitle(),
+            'name' => $services[$int],
             'description' => $faker->realText(),
-            'display_in_list' => true,
+            'display_in_list' => random_int(0, 1),
         ];
     }
 }

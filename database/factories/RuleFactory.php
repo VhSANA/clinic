@@ -19,11 +19,25 @@ class RuleFactory extends Factory
     {
         $faker = FakerFactory::create('fa_IR');;
 
+        $rule = ['doctor','secretary','cashier',];
+        $int = array_rand($rule);
+        $title = $rule[$int];
+
         return [
-            'title' => $faker->jobTitle(),
-            'persian_title' => $faker->jobTitle(),
+            'title' => $title,
+            'persian_title' => function () use ($title) {
+                switch ($title) {
+                    case 'doctor':
+                        return 'پزشک';
+                    case 'secretary':
+                        return 'منشی';
+
+                    case 'cashier':
+                        return 'صندوقدار';
+                }
+            },
             'description' => $faker->realText(),
-            'rule_icon' => $faker->imageUrl()
+            'rule_icon' => null
         ];
     }
 }
