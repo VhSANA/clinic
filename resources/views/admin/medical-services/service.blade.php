@@ -15,17 +15,11 @@
                     <!--نمایش در لیست -->
                     <x-app.input.disabled-inputs name="display_in_list" label="در لیست نمایش داده شود" type="checkbox" :checked="$service->display_in_list" />
 
-                    <div class=" row flex items-center justify-center gap-2">
-                        <!-- تاریخ ایجاد خدمت -->
-                        <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد خدمت" :value="$service->created_at == null ? '-' : \Carbon\Carbon::create($service->created_at)->toDayDateTimeString()" />
-
-                        <!-- تاریخ ویرایش خدمت -->
-                        <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش خدمت" :value="$service->updated_at == null ? '-' : \Carbon\Carbon::create($service->updated_at)->toDayDateTimeString()" />
+                    {{-- تاریخ تولید و ویرایش --}}
+                    <x-app.input.show-create-update label="خدمت" :model="$service" />
                     </div>
-                    <div class="flex gap-2 mt-4 px-2 justify-around items-center">
-                        <x-app.button.delete-btn :route="route('service.destroy', $service->id)">حذف</x-app.delete-btn>
-                        <x-app.button.edit-btn :route="route('service.edit', $service->id)">ویرایش</x-app.edit-btn>
-                    </div>
+                    {{-- عملیات ویرایش و حذف --}}
+                    <x-app.button.button-groups.show-handlers :delete="route('service.destroy', $service->id)" :edit="route('service.edit', $service->id)" />
                 </div>
             </div>
         </div>

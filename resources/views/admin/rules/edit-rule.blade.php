@@ -19,17 +19,11 @@
                         <!-- عنوان انگلیسی -->
                         <x-app.input.edit-inputs name="description" label="توضیحات مقام" type="textarea" :value="$rule->description" />
 
-                        <div class=" row flex items-center justify-center gap-2">
-                            <!-- تاریخ ایجاد پرسنل -->
-                            <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد پرسنل" :value="$rule->created_at == null ? '-' : \Carbon\Carbon::create($rule->created_at)->toDayDateTimeString()" />
+                        {{-- تاریخ تولید و ویرایش --}}
+                        <x-app.input.show-create-update label="نقش کاربر" :model="$rule" />
 
-                            <!-- تاریخ ویرایش پرسنل -->
-                            <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش پرسنل" :value="$rule->updated_at == null ? '-' : \Carbon\Carbon::create($rule->updated_at)->toDayDateTimeString()" />
-                        </div>
-                        <div class="mt-5 flex gap-2 px-2 justify-around items-center">
-                            <x-app.button.cancel-btn :route="route('rule.show', $rule->id)">لغو ویرایش</x-app.cancel-btn>
-                            <x-app.button.edit-btn type="button">ثبت ویرایش</x-app.edit-btn>
-                        </div>
+                        {{-- عملیات ویرایش --}}
+                        <x-app.button.button-groups.edit-handlers :route="route('rule.show', $rule->id)" />
                     </form>
                 </div>
             </div>

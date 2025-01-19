@@ -48,10 +48,8 @@
             <!-- Confirm Password -->
             <x-app.input.all-inputs name="password_confirmation" type="password" label="تکرار رمزعبور" placeholder="تکرار رمزعبور خود را وارد کنید." />
 
-            <div class="flex justify-evenly mt-7">
-                <x-app.button.add-btn >ایجاد کاربر جدید</x-app.add-btn>
-                <x-app.button.cancel-btn :route="route('users.index')">لغو ایجاد کاربر</x-app.cancel-btn>
-            </div>
+            {{-- عملیات ایجاد و لغو --}}
+            <x-app.button.button-groups.create-handlers :cancel_route="route('users.index')" />
         </div>
     </form>
 </div>

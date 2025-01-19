@@ -30,18 +30,13 @@
                         <!-- موبایل -->
                         <x-app.input.disabled-inputs name="mobile" label="شماره موبایل کاربر" :value="$user->mobile" />
                     </div>
-                    <div class=" row flex items-center justify-center gap-2">
-                        <!-- تاریخ ایجاد کاربر -->
-                        <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد کاربر" :value="$user->created_at == null ? '-' : \Carbon\Carbon::create($user->created_at)->toDayDateTimeString()" />
 
-                        <!-- تاریخ ویرایش کاربر -->
-                        <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش کاربر" :value="$user->updated_at == null ? '-' : \Carbon\Carbon::create($user->updated_at)->toDayDateTimeString()" />
-                    </div>
+                    {{-- تاریخ تولید و ویرایش --}}
+                    <x-app.input.show-create-update label="کاربر" :model="$user" />
                 </div>
-                <div class="flex gap-2 px-2 justify-around items-center">
-                    <x-app.button.delete-btn :route="route('users.destroy', $user->id)">حذف کاربر</x-app.delete-btn>
-                    <x-app.button.edit-btn :route="route('users.edit', $user->id)">ویرایش کاربر</x-app.edit-btn>
-                </div>
+
+                {{-- عملیات ویرایش و حذف --}}
+                <x-app.button.button-groups.show-handlers :delete="route('users.destroy', $user->id)" :edit="route('users.edit', $user->id)" />
             </div>
             @else
             <div class="border-b px-4 pb-6">

@@ -13,10 +13,8 @@
             <!-- توضیحات -->
             <x-app.input.all-inputs type="textarea" name="description" label="توضیحات" placeholder="توضیحی مختصر در مورد مقام بنویسید (میتواند خالی باشد)" />
 
-            <div class="flex justify-evenly mt-3">
-                <x-app.button.add-btn >ایجاد</x-app.add-btn>
-                <x-app.button.cancel-btn :route="route('rule.index')">لغو</x-app.cancel-btn>
-            </div>
+            {{-- عملیات ایجاد و لغو --}}
+            <x-app.button.button-groups.create-handlers :cancel_route="route('rule.index')" />
         </form>
     </div>
 @endsection

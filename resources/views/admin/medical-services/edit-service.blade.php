@@ -19,17 +19,11 @@
                         <!--نمایش در لیست -->
                         <x-app.input.edit-inputs name="display_in_list" label="در لیست نمایش داده شود" type="checkbox" :checked="$service->display_in_list" />
 
-                        <div class=" row flex items-center justify-center gap-2">
-                            <!-- تاریخ ایجاد خدمت -->
-                            <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد خدمت" :value="$service->created_at == null ? '-' : \Carbon\Carbon::create($service->created_at)->toDayDateTimeString()" />
+                        {{-- تاریخ تولید و ویرایش --}}
+                        <x-app.input.show-create-update label="خدمت" :model="$service" />
 
-                            <!-- تاریخ ویرایش خدمت -->
-                            <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش خدمت" :value="$service->updated_at == null ? '-' : \Carbon\Carbon::create($service->updated_at)->toDayDateTimeString()" />
-                        </div>
-                        <div class="mt-5 flex gap-2 px-2 justify-around items-center">
-                            <x-app.button.cancel-btn :route="route('service.show', $service->id)">لغو ویرایش</x-app.cancel-btn>
-                            <x-app.button.edit-btn type="button">ثبت ویرایش</x-app.edit-btn>
-                        </div>
+                        {{-- عملیات ویرایش --}}
+                        <x-app.button.button-groups.edit-handlers :route="route('service.show', $service->id)" />
                     </form>
                 </div>
             </div>

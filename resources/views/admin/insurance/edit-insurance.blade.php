@@ -16,17 +16,11 @@
                         <!-- توضیحات -->
                         <x-app.input.edit-inputs type="textarea" name="description" label="توضیحات بیمه" :value="$insurance->description" />
 
-                        <div class=" row flex items-center justify-center gap-2">
-                            <!-- تاریخ ایجاد بیمه -->
-                            <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد بیمه" :value="$insurance->created_at == null ? '-' : \Carbon\Carbon::create($insurance->created_at)->toDayDateTimeString()" />
+                        {{-- تاریخ تولید و ویرایش --}}
+                        <x-app.input.show-create-update label="بیمه" :model="$insurance" />
 
-                            <!-- تاریخ ویرایش بیمه -->
-                            <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش بیمه" :value="$insurance->updated_at == null ? '-' : \Carbon\Carbon::create($insurance->updated_at)->toDayDateTimeString()" />
-                        </div>
-                        <div class="mt-5 flex gap-2 px-2 justify-around items-center">
-                            <x-app.button.cancel-btn :route="route('insurance.show', $insurance->id)">لغو ویرایش</x-app.cancel-btn>
-                            <x-app.button.edit-btn type="button">ثبت ویرایش</x-app.edit-btn>
-                        </div>
+                        {{-- عملیات ویرایش --}}
+                        <x-app.button.button-groups.edit-handlers :route="route('insurance.show', $insurance->id)" />
                     </form>
                 </div>
             </div>

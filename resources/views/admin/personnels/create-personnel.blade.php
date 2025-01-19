@@ -27,10 +27,8 @@
             <x-app.input.all-inputs name="image_url" type="file" label="تصویر پروفایل" />
 
 
-            <div class="flex justify-evenly mt-3">
-                <x-app.button.add-btn >ایجاد</x-app.add-btn>
-                <x-app.button.cancel-btn :route="route('personnel.index')">لغو</x-app.cancel-btn>
-            </div>
+            {{-- عملیات ایجاد و لغو --}}
+            <x-app.button.button-groups.create-handlers :cancel_route="route('personnel.index')" />
         </form>
     </div>
 @endsection

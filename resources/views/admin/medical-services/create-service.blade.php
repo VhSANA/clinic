@@ -13,10 +13,8 @@
             <!-- نمایش در لیست -->
             <x-app.input.all-inputs type="checkbox" name="display_in_list" label="در لیست نمایش داده شود" checked="true" />
 
-            <div class="flex justify-evenly mt-3">
-                <x-app.button.add-btn >ایجاد</x-app.add-btn>
-                <x-app.button.cancel-btn :route="route('service.index')">لغو</x-app.cancel-btn>
-            </div>
+            {{-- عملیات ایجاد و لغو --}}
+            <x-app.button.button-groups.create-handlers :cancel_route="route('service.index')" />
         </form>
     </div>
 @endsection

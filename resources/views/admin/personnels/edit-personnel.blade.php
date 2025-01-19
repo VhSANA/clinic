@@ -30,17 +30,11 @@
                             <x-app.input.edit-inputs name="personnel_code" label="شماره پرسنلی" :value="$personnel->personnel_code" />
                         </div>
 
-                        <div class=" row flex items-center justify-center gap-2">
-                            <!-- تاریخ ایجاد پرسنل -->
-                            <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد پرسنل" :value="$personnel->created_at == null ? '-' : \Carbon\Carbon::create($personnel->created_at)->toDayDateTimeString()" />
+                        {{-- تاریخ تولید و ویرایش --}}
+                        <x-app.input.show-create-update label="پرسنل" :model="$personnel" />
 
-                            <!-- تاریخ ویرایش پرسنل -->
-                            <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش پرسنل" :value="$personnel->updated_at == null ? '-' : \Carbon\Carbon::create($personnel->updated_at)->toDayDateTimeString()" />
-                        </div>
-                        <div class="mt-5 flex gap-2 px-2 justify-around items-center">
-                            <x-app.button.cancel-btn :route="route('personnel.show', $personnel->id)">لغو ویرایش</x-app.cancel-btn>
-                            <x-app.button.edit-btn type="button">ثبت ویرایش</x-app.edit-btn>
-                        </div>
+                        {{-- عملیات ویرایش --}}
+                        <x-app.button.button-groups.edit-handlers :route="route('personnel.show', $personnel->id)" />
                     </form>
                 </div>
             </div>

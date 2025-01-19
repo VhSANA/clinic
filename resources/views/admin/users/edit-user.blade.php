@@ -50,17 +50,12 @@
 
                             <x-app.input.edit-inputs name="mobile" label="شماره موبایل کاربر" type="number" :value="$user->mobile" />
                         </div>
-                        <div class=" row flex items-center justify-center gap-2">
-                            <!-- تاریخ ایجاد کاربر -->
-                            <x-app.input.disabled-inputs name="created_at" label="تاریخ ایجاد کاربر" :value="$user->created_at == null ? '-' : \Carbon\Carbon::create($user->created_at)->toDayDateTimeString()" />
 
-                            <!-- تاریخ ویرایش کاربر -->
-                            <x-app.input.disabled-inputs name="updated_at" label="تاریخ ویرایش کاربر" :value="$user->updated_at == null ? '-' : \Carbon\Carbon::create($user->updated_at)->toDayDateTimeString()" />
-                        </div>
-                        <div class="mt-5 flex gap-2 px-2 justify-around items-center">
-                            <x-app.button.cancel-btn :route="route('users.show', $user->id)">لغو ویرایش</x-app.cancel-btn>
-                            <x-app.button.edit-btn type="button">ویرایش کاربر</x-app.edit-btn>
-                        </div>
+                        {{-- تاریخ تولید و ویرایش --}}
+                        <x-app.input.show-create-update label="کاربر" :model="$user" />
+
+                        {{-- عملیات ویرایش --}}
+                        <x-app.button.button-groups.edit-handlers :route="route('users.show', $user->id)" />
                     </form>
                 </div>
             </div>

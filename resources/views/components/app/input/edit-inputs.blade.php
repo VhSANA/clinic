@@ -23,6 +23,15 @@
             <x-input-error :messages="$errors->get($name)" class="mt-2" />
         </div>
         @break
+    @case('select')
+        <div class="mt-4">
+            <x-input-label for="{{$name}}" class="mb-1" :value="__($label)" />
+            <select name="{{$name}}" id="{{$name}}" class="rounded-lg border-gray-300 w-full placeholder-gray-300 ">
+                {{ $slot }}
+            </select>
+            <x-input-error :messages="$errors->get($name)" class="mt-2" />
+        </div>
+        @break
     @default
     <div class="mt-4">
         <x-input-label for="{{$name}}" :value="__($label)" />

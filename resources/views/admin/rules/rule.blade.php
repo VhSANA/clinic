@@ -14,11 +14,12 @@
 
                     <!-- عنوان انگلیسی -->
                     <x-app.input.disabled-inputs name="description" label="توضیحات مقام" type="textarea" :value="$rule->description" />
+
+                    {{-- تاریخ تولید و ویرایش --}}
+                    <x-app.input.show-create-update label="نقش کاربر" :model="$rule" />
                 </div>
-                <div class="flex gap-2 px-2 justify-around items-center">
-                    <x-app.button.delete-btn :route="route('rule.destroy', $rule->id)">حذف مقام</x-app.delete-btn>
-                    <x-app.button.edit-btn :route="route('rule.edit', $rule->id)">ویرایش مقام</x-app.edit-btn>
-                </div>
+                {{-- عملیات ویرایش و حذف --}}
+                <x-app.button.button-groups.show-handlers :delete="route('rule.destroy', $rule->id)" :edit="route('rule.edit', $rule->id)" />
             </div>
         </div>
     <!-- Card end -->
