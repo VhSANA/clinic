@@ -17,7 +17,8 @@
     @case('checkbox')
         <div class="mt-4">
             <div class="flex">
-                <input class="ml-2 rounded-md" id="{{$name}}" type="checkbox" name="{{$name}}" :value="$checked ? true : false"  autofocus {{ $checked ? 'checked' : '' }} />
+                <input type="hidden" name="{{$name}}" value="off" />
+                <input class="ml-2 rounded-md" id="{{$name}}" type="checkbox" name="{{$name}}" value="on"  autofocus {{ $checked ? 'checked' : '' }} />
                 <x-input-label for="{{$name}}" :value="__($label)" />
             </div>
             <x-input-error :messages="$errors->get($name)" class="mt-2" />
@@ -29,6 +30,15 @@
             <select name="{{$name}}" id="{{$name}}" class="rounded-lg border-gray-300 w-full placeholder-gray-300 ">
                 {{ $slot }}
             </select>
+            <x-input-error :messages="$errors->get($name)" class="mt-2" />
+        </div>
+        @break
+    @case('datetime')
+        <div class="mt-4">
+            <div class="flex flex-col w-full">
+                <x-input-label for="{{$name}}" :value="__($label)" />
+                <x-app.input.datetime-input id="{{$name}}" name="{{$name}}" value="{{ $value }}" autofocus/>
+            </div>
             <x-input-error :messages="$errors->get($name)" class="mt-2" />
         </div>
         @break

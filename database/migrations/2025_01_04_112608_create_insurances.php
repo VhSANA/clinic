@@ -21,6 +21,7 @@ return new class extends Migration
 
         Schema::table('patients', function (Blueprint $table) {
             $table->foreignId('insurance_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->string('insurance_number');
         });
     }
 

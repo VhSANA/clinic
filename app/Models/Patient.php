@@ -14,6 +14,7 @@ class Patient extends Model
         'name',
         'family',
         'full_name',
+        'father_name',
         'national_code',
         'is_foreigner',
         'passport_code',
@@ -29,6 +30,6 @@ class Patient extends Model
 
     public function insurance()
     {
-        return $this->hasOne(Insurance::class);
+        return $this->belongsTo(Insurance::class);
     }
 }

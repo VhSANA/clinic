@@ -2,18 +2,12 @@
 
 namespace App\Rules;
 
-use App\Models\User;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
-class NationalcodeValidation implements ValidationRule
+class AddressValidation implements ValidationRule
 {
-    public $user;
-    public function __construct($user = null) {
-        $this->user = $user;
-    }
     /**
      * Run the validation rule.
      *
@@ -26,14 +20,14 @@ class NationalcodeValidation implements ValidationRule
             [
                 $attribute => [
                     'required',
-                    'size:10',
-                    ! is_null($this->user) && Rule::unique('users', 'national_code')->ignore($this->user->id)
+                    'min:2',
+                    'max:250',
                 ],
             ],
             [
-                'required' => 'وارد نمودن کد ملی الزامیست.',
-                'size' => 'کد ملی فقط باید شامل 10 رقم باشد.',
-                'unique' => 'کد ملی قبلا ثبت شده است.',
+                'required' => 'آدرس بیمار نمیتواند خالی باشد.',
+                'min' => 'آدرس بیمار حداقل باید شامل 2 کاراکتر باشد.',
+                'max' => 'آدرس بیمار طولانی میباشد.',
             ]
         );
 

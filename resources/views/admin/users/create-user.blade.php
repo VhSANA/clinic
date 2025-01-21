@@ -37,8 +37,7 @@
 
             <!-- جنسیت -->
             <x-app.input.all-inputs name="gender" type="select" label="جنسیت" >
-                <option value="male">آقا</option>
-                <option value="female">خانم</option>
+                {{ optionDetails('gender')}}
             </x-app.input.all-inputs>
 
 

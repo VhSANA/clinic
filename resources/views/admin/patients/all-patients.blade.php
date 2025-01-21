@@ -71,7 +71,11 @@
                         {{ $patient->full_name }}
                     </th>
                     <td class="px-6 py-4">
-                        {{ $patient->national_code }}
+                        @if (empty($patient->national_code))
+                            X
+                        @else
+                            {{ $patient->national_code }}
+                        @endif
                     </td>
                     <td class="px-6 py-4">
                         {{ $patient->mobile }}
@@ -83,7 +87,7 @@
                         @if ($patient->is_foreigner == false)
                             X
                         @else
-                            شماره پاسپورت: {{ $patient->passport_code }}
+                            {{ $patient->passport_code }}
                         @endif
                     </td>
                     <td class="px-6 py-4 text-center flex items-center justify-center">

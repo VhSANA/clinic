@@ -48,7 +48,7 @@ Route::resource('rule', RuleController::class);
 // insurance
 Route::resource('insurance', InsuranceController::class);
 
-// insurance
+// patient
 Route::resource('patient', PatientController::class);
 
 // medicalservices
