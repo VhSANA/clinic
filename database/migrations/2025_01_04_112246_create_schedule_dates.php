@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('schedule_dates', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
+            $table->string('title')->nullable();
             $table->boolean('is_holiday')->default(0);
             $table->text('description')->nullable();
             $table->timestamp('date');

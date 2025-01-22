@@ -80,10 +80,16 @@ if (! function_exists('addDashifEmpty')) {
     }
 }
 
-
 // morilog jalali converter
 if (! function_exists('convertToJalali')) {
     function convertToJalali($date) {
         return Jalalian::fromCarbon(Carbon::create($date))->format('%A, %d %B %Y');
+    }
+}
+
+// convert days of calender to Jalalian date format
+if (! function_exists('convertCalendarDayToPersianDate')) {
+    function convertCalendarDayToPersianDate($currentDateAsJalalian, $day) {
+        return $currentDateAsJalalian->format('Y-m') . '-' . str_pad($day, 2, '0', STR_PAD_LEFT);
     }
 }

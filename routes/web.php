@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\MedicalServicesController;
 use App\Http\Controllers\PatientController;
@@ -9,8 +10,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\UserController;
+use App\Models\Calendar;
 use App\Models\Insurance;
 use App\Models\Patient;
+use App\Models\ScheduleDate;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -60,5 +63,7 @@ Route::resource('room', RoomController::class);
 // personnel-service
 Route::resource('personnel-service', PersonnelServiceController::class);
 
+// calendar
+Route::resource('calendar', CalendarController::class)->except(['create', 'show', 'edit']);
 
 require __DIR__.'/auth.php';
