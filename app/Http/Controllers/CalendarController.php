@@ -14,6 +14,10 @@ class CalendarController extends Controller
      */
     public function index(Request $request)
     {
+        // TODO add validation if admin tries to delete the day as work day, bans admin from that action if there was appointments added to that day
+        // get queries from DB
+        $calendars = Calendar::query()->get();
+
         // create Persian calender view
         $currentDate = Jalalian::now();
 
@@ -30,13 +34,14 @@ class CalendarController extends Controller
         // Calculate the last days of the previous month
         $previousMonth = $currentDate->subMonths(1);
         $daysInPreviousMonth = $previousMonth->getMonthDays();
-        $lastDaysOfPreviousMonth = $daysInPreviousMonth - $firstDayOfMonth + 1;
+        $lastDaysOfPreviousMonth = $daysInPreviousMonth - $firstDayOfMonth;
 
         // Calculate the first days of the next month
         $nextMonth = $currentDate->addMonths(1);
         $remainingDays = (7 - (($daysInMonth + $firstDayOfMonth) % 7)) % 7;
 
         return view('admin.calender.all-calender', [
+            'calendars' => $calendars,
             'currentDate' => $currentDate,
             'daysInMonth' => $daysInMonth,
             'firstDayOfMonth' => $firstDayOfMonth,
@@ -52,7 +57,24 @@ class CalendarController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request['add_work_date'] == '') {
+            return redirectWithJson(false, 'تقویم کاری خالی میباشد.', [], 400, 'calendar.index');
+        }
 
+        // get Solar Hijri from input and seprate into year, month and day and convert it to Carbon
+        $date = convertExplodedDate($request['add_work_date']);
+
+        // save to DB
+        Calendar::create([
+            'is_holiday' => false,
+            'date' => $date
+        ]);
+
+        // json respone and redirect
+        response()->json([
+            'message' => 'روز کاری با موفقیت اضافه شد'
+        ]);
+        return back();
     }
 
     /**
@@ -60,14 +82,29 @@ class CalendarController extends Controller
      */
     public function update(Request $request, Calendar $calendar)
     {
-        //
+        $calendar->update([
+            'is_holiday' => ! $calendar->is_holiday
+        ]);
+
+        // json respone and redirect
+        response()->json([
+            'message' => 'روز کاری با موفقیت ویرایش شد'
+        ]);
+        return back();
     }
 
-    /**
+    /**j
      * Remove the specified resource from storage.
      */
     public function destroy(Calendar $calendar)
     {
+        // TODO add validation if admin tries to delete the day as work day, bans admin from that action if there was appointments added to that day
+        $calendar->deleteOrFail();
 
+        // json respone and redirect
+        response()->json([
+            'message' => 'روز کاری با موفقیت حذف شد'
+        ]);
+        return back();
     }
 }

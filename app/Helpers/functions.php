@@ -36,7 +36,7 @@ if (! function_exists('redirectWithJson')) {
         string $message,
         array|string $data = [],
         int $code = 200,
-        $route
+        $route 
         ) {
         // json response
         response()->json([
@@ -91,5 +91,21 @@ if (! function_exists('convertToJalali')) {
 if (! function_exists('convertCalendarDayToPersianDate')) {
     function convertCalendarDayToPersianDate($currentDateAsJalalian, $day) {
         return $currentDateAsJalalian->format('Y-m') . '-' . str_pad($day, 2, '0', STR_PAD_LEFT);
+    }
+}
+
+// eplode date into year, month and day and convert it to Carbon
+if (! function_exists('convertExplodedDate')) {
+    function convertExplodedDate($date) {
+        list(
+            $year,
+            $month,
+            $day
+        ) = explode('-', $date);
+
+        // convert to Carbon
+        $carbonedDate = (new Jalalian($year, $month, $day))->toCarbon()->toDateTimeString();
+
+        return $carbonedDate;
     }
 }

@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('schedule_dates', function (Blueprint $table) {
+        Schema::create('schedul e_dates', function (Blueprint $table) {
             $table->id();
-            $table->string('title')->nullable();
             $table->boolean('is_holiday')->default(0);
-            $table->text('description')->nullable();
-            $table->timestamp('date');
+            $table->string('date');
             $table->timestamps();
         });
     }

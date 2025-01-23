@@ -1,4 +1,3 @@
-
 @extends('admin.layouts.master')
 
 @section('content')
@@ -23,64 +22,92 @@
                 </div>
                 <h2 class="text-lg font-bold pb-2 mb-2">{{ $monthName }}</h2>
             </div>
-            <div class="grid grid-cols-7 gap-2 p-4 border-t">
-                <div class="text-center font-medium text-gray-600">شنبه</div>
-                <div class="text-center font-medium text-gray-600">یکشنبه</div>
-                <div class="text-center font-medium text-gray-600">دوشنبه</div>
-                <div class="text-center font-medium text-gray-600">سه شنبه</div>
-                <div class="text-center font-medium text-gray-600">چهارشنبه</div>
-                <div class="text-center font-medium text-gray-600">پنج شنبه</div>
-                <div class="text-center font-medium text-gray-600">جمعه</div>
+            <table class="table-auto w-full border-t p-4">
+                <thead>
+                    <tr class="bg-gray-600">
+                        <th class="text-center py-3 border border-gray-300 font-medium text-white">شنبه</th>
+                        <th class="text-center py-3 border border-gray-300 font-medium text-white">یکشنبه</th>
+                        <th class="text-center py-3 border border-gray-300 font-medium text-white">دوشنبه</th>
+                        <th class="text-center py-3 border border-gray-300 font-medium text-white">سه شنبه</th>
+                        <th class="text-center py-3 border border-gray-300 font-medium text-white">چهارشنبه</th>
+                        <th class="text-center py-3 border border-gray-300 font-medium text-white">پنج شنبه</th>
+                        <th class="text-center py-3 border border-gray-300 font-medium text-white">جمعه</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="">
+                        <!-- Last days of the previous month -->
+                        @for ($i = $lastDaysOfPreviousMonth; $i < $daysInPreviousMonth; $i++)
+                            <td class="border p-4 text-gray-400 text-center">{{ $i + 1 }}</td>
+                        @endfor
 
-                <!-- Calendar days -->
-                {{-- last days of previous month --}}
-                @for ($i = $lastDaysOfPreviousMonth; $i <= $daysInPreviousMonth; $i++)
-                    <div class="border p-4 text-gray-400 flex justify-center items-center">{{ $i }}</div>
-                @endfor
-                {{-- days of this month --}}
-                @for ($day = 1; $day <= $daysInMonth; $day++)
-                    <div class="flex flex-col items-center bg-gray-50 border rounded-lg p-4 hover:shadow-md">
-                        <div class="text-gray-700 font-bold mb-2">{{ $day }}</div>
-                        <div id="work-view-{{$day}}" class="flex justify-around items-center gap-2">
-                            <form action="{{ route('calendar.store')}}" method="post">
-                                @csrf
-                                <input name="add_work" class="hidden" value="{{ convertCalendarDayToPersianDate($currentDate, $day) }}">
-                                <button type="submit" id="work-{{$day}}" class="text-blue-500 hover:text-blue-700 text-sm font-semibold work-toggle">
-                                    <x-icons.work />
-                                </button>
-                            </form>
-                        </div>
-                        <div id="trash-view-{{$day}}" class="hidden justify-around items-center gap-2">
-                            <div class="flex justify-around items-center gap-2">
-                                <form action="{{'calendar.destroy'}}" method="post">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" id="trash-{{$day}}" class="text-red-500 hover:text-red-700 text-sm font-semibold trash-toggle">
-                                        <x-icons.trash />
-                                    </button>
-                                </form>
-                                <a href="#" class="text-yellow-500 hover:text-yellow-700 text-sm font-semibold">
-                                    <x-icons.edit />
-                                </a>
-                                <a href="#" class="text-green-500 hover:text-green-700 text-sm font-semibold">
-                                    <x-icons.holiday />
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                @endfor
-                {{-- first days of next month --}}
-                @for ($i = 1; $i <= $remainingDays; $i++)
-                    <div class="border p-4 text-gray-400 flex justify-center items-center">{{ $i }}</div>
-                @endfor
-            </div>
+                        <!-- Current month days -->
+                        @for ($day = 1; $day <= $daysInMonth; $day++)
+                        @php
+                            $persianDate = convertCalendarDayToPersianDate($currentDate, $day);
+                            $carbonDate = convertExplodedDate($persianDate);
+                            $calendar = $calendars->firstWhere('date', $carbonDate);
+                        @endphp
+                            <td class="border p-4 text-center rounded m-2 transition {{ ($day + ($daysInPreviousMonth - $lastDaysOfPreviousMonth)) % 7 === 0 ? 'bg-gray-200 border-gray-300 hover:bg-gray-300' : 'bg-gray-50 border-gray-200 hover:bg-gray-100' }}">
+                                <div class="text-gray-700 font-bold mb-2">
+                                    {{ $day }}
+                                </div>
+                                @if ($calendar)
+                                {{-- @dd($calendar) --}}
+                                <div id="trash-view-{{$day}}" class="{{ jdate($calendar->date)->getDay() == $day ? 'flex' : 'hidden' }}  justify-center items-center gap-2">
+                                    <form action="{{ route('calendar.destroy', $calendar->id) }}" method="post">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" id="trash-{{$day}}" class="text-red-500 hover:text-red-700 text-sm font-semibold trash-toggle">
+                                            <x-icons.trash />
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('calendar.update', $calendar->id) }}" method="post">
+                                        @csrf
+                                        @method('PUT')
+                                        <input name="add_holiday_date" class="hidden" value="{{ convertCalendarDayToPersianDate($currentDate, $day) }}">
+                                        <button type="submit" id="holiday" class="text-green-500 hover:text-green-700 text-sm font-semibold">
+                                            <x-icons.holiday isHoliday="{{$calendar->is_holiday == 1 && true}}" />
+                                        </button>
+                                    </form>
+                                </div>
+                                @else
+                                <div id="work-view-{{$day}}" class="flex justify-around items-center gap-2">
+                                    <form action="{{ route('calendar.store')}}" method="post">
+                                        @csrf
+                                        <input name="add_work_date" class="hidden" value="{{ convertCalendarDayToPersianDate($currentDate, $day) }}">
+                                        <button type="submit" id="work-{{$day}}" class="text-blue-500 hover:text-blue-700 text-sm font-semibold work-toggle">
+                                            <x-icons.work />
+                                        </button>
+                                    </form>
+                                </div>
+                                @endif
+                            </td>
+                            <!-- Close and start a new row after 7 days -->
+                            @if (($day + ($daysInPreviousMonth - $lastDaysOfPreviousMonth)) % 7 === 0)
+                                </tr><tr>
+                            @endif
+                        @endfor
+
+                        <!-- Remaining days of the next month -->
+                        @for ($i = 1; $i <= $remainingDays; $i++)
+                            <td class="border p-4 text-gray-400 text-center">{{ $i }}</td>
+
+                            <!-- Close the row if it's the last day of the week -->
+                            @if (($daysInMonth + $i - 1) % 7 === 0)
+                                </tr><tr>
+                            @endif
+                        @endfor
+                    </tr>
+                </tbody>
+            </table>
         </div>
       </div>
     </div>
   </div>
 
   {{-- script for toggling between work and work day's details --}}
-<script>
+{{-- <script>
     document.addEventListener('DOMContentLoaded', function () {
         const workToggles = document.querySelectorAll('.work-toggle');
         const trashToggles = document.querySelectorAll('.trash-toggle');
@@ -107,5 +134,5 @@
             });
         });
     });
-</script>
+</script> --}}
 @endsection
