@@ -18,9 +18,18 @@ class CalendarController extends Controller
         // get queries from DB
         $calendars = Calendar::query()->get();
 
-        // create Persian calender view
-        $currentDate = Jalalian::now();
+    // // create Persian calender view
+        // Check if a specific date is provided
+        if ($request->has('gotodate')) {
+            $goToDate = Jalalian::forge($request->input('gotodate'));
+        } else {
+            $goToDate = Jalalian::now();
+        }
 
+        // Create Persian calendar view
+        $currentDate = $goToDate;
+
+        // Retrieve and validate year and month
         $year = $request->input('year', $currentDate->getYear());
         $month = $request->input('month', $currentDate->getMonth());
 
