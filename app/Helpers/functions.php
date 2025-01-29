@@ -5,6 +5,8 @@ use Carbon\Carbon;
 use Morilog\Jalali\Jalalian;
 use Symfony\Component\CssSelector\XPath\Extension\FunctionExtension;
 
+use function PHPUnit\Framework\isNull;
+
 if (! function_exists('profileImageFunction')) {
     function profileImageFunction(User $user)
     {
@@ -36,7 +38,7 @@ if (! function_exists('redirectWithJson')) {
         string $message,
         array|string $data = [],
         int $code = 200,
-        $route 
+        $route
         ) {
         // json response
         response()->json([
@@ -56,13 +58,13 @@ if (! function_exists('optionDetails')) {
     function optionDetails($name, $model = null) {
         switch ($name) {
             case 'gender':
-                echo '<option value="male" ' . (old('gender', $model->gender) == 'male' ? 'selected' : '') . '>مرد</option>';
-                echo '<option value="female" ' . (old('gender', $model->gender) == 'female' ? 'selected' : '') . '>زن</option>';
+                echo '<option value="male" ' . (! is_null($model) ? (old('gender', $model->gender) == 'male' ? 'selected' : '') : (old('gender') == 'male' ? 'selected' : '')) . '>مرد</option>';
+                echo '<option value="female" ' . (! is_null($model) ? (old('gender', $model->gender) == 'female' ? 'selected' : '') : (old('gender') == 'female' ? 'selected' : '')) . '>زن</option>';
                 break;
 
             case 'relation_status':
-                echo '<option value="single" ' . (old('relation_status', $model->relation_status) == 'single' ? 'selected' : '') . '>مجرد</option>';
-                echo '<option value="married" ' . (old('relation_status', $model->relation_status) == 'married' ? 'selected' : '') . '>متاهل</option>';
+                echo '<option value="single" ' . (! is_null($model) ? (old('relation_status', $model->relation_status) == 'single' ? 'selected' : '') : (old('relation_status') == 'single' ? 'selected' : '')) . '>مجرد</option>';
+                echo '<option value="married" ' . (! is_null($model) ? (old('relation_status', $model->relation_status) == 'married' ? 'selected' : '') : (old('relation_status') == 'married' ? 'selected' : '')) . '>متاهل</option>';
                 break;
         }
     }

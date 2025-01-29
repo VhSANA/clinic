@@ -13,14 +13,13 @@ return new class extends Migration
     {
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
-            $table->timestamp('from_date');
-            $table->timestamp('to_date')->nullable();
-            $table->string('possible_visits')->default(0);
             $table->string('title');
-            $table->foreignId('schedule_date_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
-            $table->foreignId('room_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->string('from_date');
+            $table->string('to_date');
             $table->foreignId('personnel_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('medical_service_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('room_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('schedule_date_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->boolean('is_appointable')->default(1);
             $table->timestamps();
         });

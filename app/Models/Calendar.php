@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Calendar extends Model
 {
     protected $table = 'schedule_dates';
-    
+
     protected $fillable = [
         'tilte',
         'is_holiday',
@@ -16,4 +16,8 @@ class Calendar extends Model
     ];
 
     // relation
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class, 'schedule_date_id');
+    }
 }

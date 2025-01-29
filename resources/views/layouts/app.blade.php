@@ -37,5 +37,6 @@
         <script src="../path/to/flowbite/dist/flowbite.min.js"></script>
         <script type="text/javascript" src="js/jquery-1.10.1.min.js"></script>
         <script type="text/javascript" src="js/persianDatepicker.min.js"></script>
+        @include('sweetalert::alert')
     </body>
 </html>

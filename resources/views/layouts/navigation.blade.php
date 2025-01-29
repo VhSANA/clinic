@@ -105,6 +105,9 @@
                             <x-dropdown-link :href="route('calendar.index')">
                                 {{ __('تقویم کاری') }}
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('schedule.index')">
+                                {{ __('شیفت کاری') }}
+                            </x-dropdown-link>
                         </x-slot>
                     </x-dropdown>
                 </div>

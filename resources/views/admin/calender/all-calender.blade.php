@@ -87,6 +87,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- @dd($lastDaysOfPreviousMonth, $daysInPreviousMonth) --}}
                     <tr class="">
                         <!-- Last days of the previous month -->
                         @for ($i = $lastDaysOfPreviousMonth; $i < $daysInPreviousMonth; $i++)
@@ -102,10 +103,9 @@
                         @endphp
                             <td class="border p-4 text-center rounded m-2 transition {{ ($day + ($daysInPreviousMonth - $lastDaysOfPreviousMonth)) % 7 === 0 ? 'bg-gray-200 border-gray-300 hover:bg-gray-300' : 'bg-gray-50 border-gray-200 hover:bg-gray-100' }}">
                                 <div class="text-gray-700 font-bold mb-2">
-                                    {{ $day }}
+                                    {{ $day }} {{ $currentDate->format('%B') }}
                                 </div>
                                 @if ($calendar)
-                                {{-- @dd($calendar) --}}
                                 <div id="trash-view-{{$day}}" class="{{ jdate($calendar->date)->getDay() == $day ? 'flex' : 'hidden' }}  justify-center items-center gap-2">
                                     <form action="{{ route('calendar.destroy', $calendar->id) }}" method="post">
                                         @csrf
@@ -157,34 +157,4 @@
       </div>
     </div>
   </div>
-
-  {{-- script for toggling between work and work day's details --}}
-{{-- <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const workToggles = document.querySelectorAll('.work-toggle');
-        const trashToggles = document.querySelectorAll('.trash-toggle');
-
-        workToggles.forEach(function (toggle) {
-            toggle.addEventListener('click', function () {
-                const id = this.id.split('-')[1];
-                const workView = document.getElementById(`work-view-${id}`);
-                const trashView = document.getElementById(`trash-view-${id}`);
-
-                workView.classList.add('hidden');
-                trashView.classList.remove('hidden');
-            });
-        });
-
-        trashToggles.forEach(function (toggle) {
-            toggle.addEventListener('click', function () {
-                const id = this.id.split('-')[1];
-                const workView = document.getElementById(`work-view-${id}`);
-                const trashView = document.getElementById(`trash-view-${id}`);
-
-                workView.classList.remove('hidden');
-                trashView.classList.add('hidden');
-            });
-        });
-    });
-</script> --}}
 @endsection

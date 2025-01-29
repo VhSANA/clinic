@@ -9,6 +9,7 @@ use App\Http\Controllers\PersonnelServiceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RuleController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\UserController;
 use App\Models\Calendar;
 use App\Models\Insurance;
@@ -65,5 +66,8 @@ Route::resource('personnel-service', PersonnelServiceController::class);
 
 // calendar
 Route::resource('calendar', CalendarController::class)->except(['create', 'show', 'edit']);
+
+// calendar
+Route::resource('schedule', ScheduleController::class)->except(['create', 'show', 'edit']);
 
 require __DIR__.'/auth.php';

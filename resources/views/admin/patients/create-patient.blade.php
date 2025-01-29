@@ -44,7 +44,7 @@
                 <x-app.input.all-inputs name="address" label="آدرس*" placeholder="آدرس مختصر" />
 
                 <!-- birth_date -->
-                <x-app.input.all-inputs name="birth_date" label="تاریخ تولد بیمار" type="datetime" />
+                {{-- <x-app.input.disabled-inputs name="birth_date" label="تاریخ تولد بیمار"  :value="empty($patient->birth_date) ? '-' : convertToJalali($patient->birth_date)" /> --}}
 
                 <!-- جنسیت -->
                 <x-app.input.all-inputs name="gender" type="select" label="جنسیت*" >
