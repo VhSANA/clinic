@@ -140,6 +140,29 @@ class ScheduleController extends Controller
                 return back();
             }
 
+            // prevent from adding duplicated value
+            $duplication_exist = Schedule::where('from_date', $selected_work_day_with_from_date)
+                                ->where('to_date', $selected_work_day_with_to_date)
+                                ->where('schedule_date_id', $request["schedule_date_id"])
+                                ->where('personnel_id', $request['personnel_id'])
+                                ->where('medical_service_id', MedicalServices::find($request["service_$identifier"])->id)
+                                ->where('room_id', $request["room_{$identifier}"])
+                                ->exists();
+
+            if ($duplication_exist) {
+                Alert::error('خطا!','مورد مشابه قبلا در سیستم ثبت شده است!');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'مورد مشابه قبلا در سیستم ثبت شده است!',
+                        'status' => 'error'
+                    ], 409);
+                }
+
+                return back();
+            }
+
             // save to DB
             Schedule::create([
                 'title' => $request["title_{$identifier}"],
@@ -242,6 +265,29 @@ class ScheduleController extends Controller
 
                     return back();
                 }
+            }
+
+            // prevent from adding duplicated value
+            $duplication_exist = Schedule::where('from_date', $selected_work_day_with_from_date)
+                                ->where('to_date', $selected_work_day_with_to_date)
+                                ->where('schedule_date_id', $request["schedule_date_id"])
+                                ->where('personnel_id', $request['personnel_id'])
+                                ->where('medical_service_id', MedicalServices::find($request["service_$identifier"])->id)
+                                ->where('room_id', $request["room_{$identifier}"])
+                                ->exists();
+
+            if ($duplication_exist) {
+                Alert::warning('ویرایشی رخ نداد','موردی مشابه قبلا در سیستم ثبت شده بود!');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'موردی مشابه قبلا در سیستم ثبت شده بود!',
+                        'status' => 'warning'
+                    ], 409);
+                }
+
+                return back();
             }
 
             // update data in DB
