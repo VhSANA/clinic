@@ -30,14 +30,6 @@ class ScheduleController extends Controller
         // personnel
         $personnels = Personnel::query()->paginate(perPage: 3);
 
-        // find personnel if selected and set to session
-        // $chosen_personnels = [];
-        // if ($request->has('personnel_id')) {
-        //     // find personnel
-        //     // return $request->all();
-        //     // $chosen_personnels = explode(',', implode(',', $request->input('personnel_id')));
-        // }
-
         $chosen_personnels = [];
         if (! $schedules->isEmpty()) {
             foreach ($schedules as $schedule) {
@@ -87,27 +79,19 @@ class ScheduleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function store(Request $request, Schedule $schedule)
+    public function store(Request $request)
     {
-        // get date of day which shift is being added to and pasre it to Carbon
-        $identifier = $request['schedule_date_id'];
-        $date = Calendar::find($identifier);
-        $selected_work_day = Carbon::parse(Carbon::parse($date->date)->toDateString());
-        $selected_work_day_with_from_date = $selected_work_day->toDateString() . ' ' . $request['from_date_'.$identifier] . ':00';
-        $selected_work_day_with_to_date = $selected_work_day->toDateString() . ' ' . $request['to_date_'.$identifier] . ':00';
-
-
-    // first check if work day is lewer or equal to now(), prevent from further actions
-        // check if work day is < now or not
-        if (jdate($selected_work_day_with_from_date) < jdate(Carbon::now('Asia/Tehran'))) {
-            Alert::error('عملیات غیرمجاز!', 'نمیتوان در تاریخ گذشته تغییراتی انجام داد.');
-            return back();
-        }
+        // get date of the day as Carbon
+        $identifier = $request['schedule_date_id'] . '_' . $request['personnel_id'];
+        $date = Calendar::find($request['schedule_date_id']);
+        $selected_work_day = Carbon::parse(Carbon::parse($date->date))->toDateString();
+        $selected_work_day_with_from_date = "$selected_work_day {$request['from_date_' . $identifier]}:00";
+        $selected_work_day_with_to_date = "$selected_work_day {$request['to_date_' . $identifier]}:00";
 
         // validations
         $validator = Validator::make($request->all(), [
             "title_{$identifier}" => [new ShiftTitleValidation],
-            "from_date_{$identifier}" => [new FromTimeValidation($selected_work_day_with_from_date)],
+            "from_date_{$identifier}" => [new FromTimeValidation],
             "to_date_{$identifier}" => [new ToTimeValidation($selected_work_day_with_from_date)],
             "personnel_id" => ['required', new PersonnelValidation, 'exists:personnels,id'],
             "schedule_date_id" => ["required", "exists:schedule_dates,id"],
@@ -128,28 +112,74 @@ class ScheduleController extends Controller
                 ->with("modal_open_{$identifier}", true);
         }
 
-    // if work day is > now()
-        // save to DB
-        Schedule::create([
-            'title' => $request["title_{$identifier}"],
-            'from_date' => $selected_work_day_with_from_date,
-            'to_date' => $selected_work_day_with_to_date,
-            'schedule_date_id' => $request["schedule_date_id"],
-            'room_id' => $request["room_{$identifier}"],
-            'personnel_id' => $request['personnel_id'],
-            'medical_service_id' => MedicalServices::find($request["service_$identifier"])->id,
-            'is_appointable' => true,
-        ]);
+        // stop storing to DB if request time is occuring in past
+        if (jdate($selected_work_day_with_from_date) < jdate(Carbon::now('Asia/Tehran'))) {
+            Alert::error('عملیات غیرمجاز!', 'نمیتوان در تاریخ گذشته تغییراتی انجام داد.');
+            return back();
+        }
 
-        response()->json([
-            'message' => 'شیفت کاری با موفقیت به تقویم اضافه شد.'
-        ], 200);
+        // get capacity of room
+        $room = Room::where('id', $request['room_' . $identifier]);
+        $room_capacity = intval($room->find($request['room_' . $identifier])->personnel_capacity);
 
-        // success alert
-        Alert::success('عملیات موفقیت آمیز!', 'شیفت کاری با موفقیت افزوده شد.');
+        try {
+            // check if room has capacity or not
+            if ($room_capacity > 0) {
+                $room_capacity -= 1;
 
-        return back();
-        // return redirect(route('schedule.index'));
+                // update new personnel capacity of room in DB
+                $room->update([
+                    'personnel_capacity' => $room_capacity
+                ]);
+            } else {
+                Alert::error('خطا!','ظرفیت اتاق تکمیل میباشد!');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'ظرفیت اتاق تکمیل میباشد!',
+                        'status' => 'error'
+                    ], 422);
+                }
+
+                return back();
+            }
+
+            // save to DB
+            Schedule::create([
+                'title' => $request["title_{$identifier}"],
+                'from_date' => $selected_work_day_with_from_date,
+                'to_date' => $selected_work_day_with_to_date,
+                'schedule_date_id' => $request["schedule_date_id"],
+                'room_id' => $request["room_{$identifier}"],
+                'personnel_id' => $request['personnel_id'],
+                'medical_service_id' => MedicalServices::find($request["service_$identifier"])->id,
+                'is_appointable' => true,
+            ]);
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'شیفت کاری با موفقیت به تقویم اضافه شد.',
+                    'status' => true
+                ], 200);
+            }
+
+            // success alert
+            Alert::success('عملیات موفقیت آمیز!', 'شیفت کاری با موفقیت افزوده شد.');
+
+            return back();
+        } catch (\Exception $e) {
+            Alert::error('خطا!', 'مشکلی در افزودن شیفت کاری به وجود آمد.');
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'مشکلی در افزودن شیفت کاری به وجود آمد.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return back();
+        }
     }
 
     /**
@@ -157,26 +187,17 @@ class ScheduleController extends Controller
      */
     public function update(Request $request, Schedule $schedule)
     {
-        return $request->all();
-        // get date of day which shift is being added to and pasre it to Carbon
-        $identifier = $request['schedule_date_id'];
-        $date = Calendar::find($identifier);
-        $selected_work_day = Carbon::parse(Carbon::parse($date->date)->toDateString());
-        $selected_work_day_with_from_date = $selected_work_day->toDateString() . ' ' . $request['from_date_'.$identifier] . ':00';
-        $selected_work_day_with_to_date = $selected_work_day->toDateString() . ' ' . $request['to_date_'.$identifier] . ':00';
-
-
-    // first check if work day is lewer or equal to now(), prevent from further actions
-        // check if work day is < now or not
-        if (jdate($selected_work_day_with_from_date) < jdate(Carbon::now('Asia/Tehran'))) {
-            Alert::error('عملیات غیرمجاز!', 'نمیتوان در تاریخ گذشته تغییراتی انجام داد.');
-            return back();
-        }
+        // get date of day and other details
+        $identifier = $schedule->id;
+        $date = Calendar::find($request['schedule_date_id']);
+        $selected_work_day = Carbon::parse(Carbon::parse($date->date))->toDateString();
+        $selected_work_day_with_from_date = "$selected_work_day {$request['from_date_' . $identifier]}";
+        $selected_work_day_with_to_date = "$selected_work_day {$request['to_date_' . $identifier]}";
 
         // validations
         $validator = Validator::make($request->all(), [
             "title_{$identifier}" => [new ShiftTitleValidation],
-            "from_date_{$identifier}" => [new FromTimeValidation($selected_work_day_with_from_date)],
+            "from_date_{$identifier}" => [new FromTimeValidation],
             "to_date_{$identifier}" => [new ToTimeValidation($selected_work_day_with_from_date)],
             "personnel_id" => ['required', new PersonnelValidation, 'exists:personnels,id'],
             "schedule_date_id" => ["required", "exists:schedule_dates,id"],
@@ -187,6 +208,7 @@ class ScheduleController extends Controller
             "room_{$identifier}.required" => 'انتخاب اتاق الزامیست.',
         ]);
 
+        // open modal if validation error exists
         if ($validator->fails()) {
             response()->json([
                 'message' => 'validation errors'
@@ -197,27 +219,87 @@ class ScheduleController extends Controller
                 ->with("edit_modal_open_{$identifier}", true);
         }
 
-    // if work day is > now()
-        // save to DB
-        Schedule::create([
-            'title' => $request["title_{$identifier}"],
-            'from_date' => $selected_work_day_with_from_date,
-            'to_date' => $selected_work_day_with_to_date,
-            'schedule_date_id' => $request["schedule_date_id"],
-            'room_id' => $request["room_{$identifier}"],
-            'personnel_id' => $request['personnel_id'],
-            'medical_service_id' => MedicalServices::find($request["service_$identifier"])->id,
-            'is_appointable' => true,
-        ]);
+        // if from_date is < now prevent user from editing
+        if ((jdate($schedule->from_date) < jdate(Carbon::now('Asia/Tehran')))) {
+            Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را ویرایش کرد.');
+            return back();
+        }
+// return 'done';
 
-        response()->json([
-            'message' => 'شیفت کاری با موفقیت به تقویم اضافه شد.'
-        ], 200);
+        // get capacity of room
+        $room = Room::where('id', $request['room_' . $identifier]);
+        $room_capacity = intval($room->find($request['room_' . $identifier])->personnel_capacity);
 
-        // success alert
-        Alert::success('عملیات موفقیت آمیز!', 'شیفت کاری با موفقیت افزوده شد.');
+        try {
+            // first check if selected room is equal to previous one or not
+            if ($room->find($request['room_' . $identifier])->id != $schedule->room_id) {
+                // check if room has capacity or not
+                if ($room_capacity > 0) {
+                    $room_capacity -= 1;
 
-        return back();
+                    // update new personnel capacity of room in DB
+                    $room->update([
+                        'personnel_capacity' => $room_capacity
+                    ]);
+
+                    // restore value of previous room's capacity
+                    $previous_room = Room::where('id', $schedule->room_id);
+                    $previous_room_capacity = intval(Room::find($schedule->room_id)->personnel_capacity);
+                    $previous_room->update([
+                        'personnel_capacity' => $previous_room_capacity + 1
+                    ]);
+                } else {
+                    Alert::error('خطا!','ظرفیت اتاق تکمیل میباشد!');
+
+                    // JSON response
+                    if (request()->expectsJson()) {
+                        return response()->json([
+                            'message' => 'ظرفیت اتاق تکمیل میباشد!',
+                            'status' => 'error'
+                        ], 422);
+                    }
+
+                    return back();
+                }
+            }
+
+            // update data in DB
+            $schedule->update([
+                'title' => $request["title_{$identifier}"],
+                'from_date' => $selected_work_day_with_from_date,
+                'to_date' => $selected_work_day_with_to_date,
+                'schedule_date_id' => $request["schedule_date_id"],
+                'room_id' => $request["room_{$identifier}"],
+                'personnel_id' => $request['personnel_id'],
+                'medical_service_id' => MedicalServices::find($request["service_$identifier"])->id,
+                'is_appointable' => true,
+            ]);
+
+            // response JSON
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'شیفت کاری با موفقیت ویرایش شد.',
+                    'status' => true
+                ], 200);
+            }
+
+            // success alert
+            Alert::success('عملیات موفقیت آمیز!', 'شیفت کاری با موفقیت ویرایش شد.');
+
+            return back();
+        } catch (\Exception $E) {
+            Alert::error('خطا!', 'مشکلی در ویرایش شیفت کاری به وجود آمد.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'مشکلی در ویرایش شیفت کاری به وجود آمد.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return back();
+        }
     }
 
     /**
@@ -225,6 +307,47 @@ class ScheduleController extends Controller
      */
     public function destroy(Schedule $schedule)
     {
-        //
+        // stop delete if present time has passed date
+        if ((jdate($schedule->from_date) < jdate(Carbon::now('Asia/Tehran')))) {
+            Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را حذف کرد.');
+            return back();
+        }
+
+        try {
+            // restore room's personnel capacity
+            $room = Room::where('id', $schedule->room_id);
+            $room_previous_capacity = intval(Room::find($schedule->room_id)->personnel_capacity);
+            $room->update([
+                'personnel_capacity' => $room_previous_capacity + 1
+            ]);
+            
+            $schedule->deleteOrFail();
+
+            // success alert
+            Alert::success('عملیات موفقیت آمیز!', 'شیفت کاری با موفقیت حذف شد.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'شیفت کاری با موفقیت حذف شد.',
+                    'status' => 'success'
+                ], 200);
+            }
+
+            return redirect()->back();
+        } catch (\Exception $e) {
+            // error alert
+            Alert::error('خطا!', 'مشکلی در حذف شیفت کاری به وجود آمد.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'مشکلی در حذف شیفت کاری به وجود آمد.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return redirect()->back();
+        }
     }
 }

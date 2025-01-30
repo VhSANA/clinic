@@ -24,15 +24,15 @@ class ToTimeValidation implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         try {
-            $from_date = $this->from_date;
-            $selected_date = Carbon::parse($from_date)->toDateString() . ' ' . $value . ':00';
-            $now = Carbon::now()->toDateTimeString();
+            $from_date = Carbon::parse($this->from_date)->toTimeString();
+            $to_date = Carbon::parse($value)->toTimeString();
+            $now = Carbon::now('Asia/Tehran')->toTimeString();
 
-            if ($selected_date < $now) {
+            if ($to_date < $now) {
                 $fail('مقدار زمان وارد شده نمیتواند کمتر از زمان حال باشد');
             }
 
-            if ($selected_date < $from_date) {
+            if ($to_date < $from_date) {
                 $fail('مقدار پایان شیفت نمیتواند کمتر از آغاز شیفت باشد');
             }
         } catch (\Exception $e) {
