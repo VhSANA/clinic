@@ -91,7 +91,7 @@ class ScheduleController extends Controller
         // validations
         $validator = Validator::make($request->all(), [
             "title_{$identifier}" => [new ShiftTitleValidation],
-            "from_date_{$identifier}" => [new FromTimeValidation],
+            "from_date_{$identifier}" => [new FromTimeValidation($selected_work_day_with_from_date)],
             "to_date_{$identifier}" => [new ToTimeValidation($selected_work_day_with_from_date)],
             "personnel_id" => ['required', new PersonnelValidation, 'exists:personnels,id'],
             "schedule_date_id" => ["required", "exists:schedule_dates,id"],
@@ -118,20 +118,15 @@ class ScheduleController extends Controller
             return back();
         }
 
-        // get capacity of room
-        $room = Room::where('id', $request['room_' . $identifier]);
-        $room_capacity = intval($room->find($request['room_' . $identifier])->personnel_capacity);
+        // get capacity of room in selected day
+        $room = Room::find($request['room_' . $identifier]);
+        $calendar = Calendar::firstWhere('date', Carbon::parse($selected_work_day)->toDateTimeString());
+        $room_ids = $calendar->schedules->pluck('room_id')->toArray();
+        $room_count = array_count_values($room_ids)[$room->id] ?? 0;
 
         try {
             // check if room has capacity or not
-            if ($room_capacity > 0) {
-                $room_capacity -= 1;
-
-                // update new personnel capacity of room in DB
-                $room->update([
-                    'personnel_capacity' => $room_capacity
-                ]);
-            } else {
+            if ($room_count >= $room->personnel_capacity) {
                 Alert::error('خطا!','ظرفیت اتاق تکمیل میباشد!');
 
                 // JSON response
@@ -197,7 +192,7 @@ class ScheduleController extends Controller
         // validations
         $validator = Validator::make($request->all(), [
             "title_{$identifier}" => [new ShiftTitleValidation],
-            "from_date_{$identifier}" => [new FromTimeValidation],
+            "from_date_{$identifier}" => [new FromTimeValidation($selected_work_day_with_from_date)],
             "to_date_{$identifier}" => [new ToTimeValidation($selected_work_day_with_from_date)],
             "personnel_id" => ['required', new PersonnelValidation, 'exists:personnels,id'],
             "schedule_date_id" => ["required", "exists:schedule_dates,id"],
@@ -224,31 +219,17 @@ class ScheduleController extends Controller
             Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را ویرایش کرد.');
             return back();
         }
-// return 'done';
 
-        // get capacity of room
-        $room = Room::where('id', $request['room_' . $identifier]);
-        $room_capacity = intval($room->find($request['room_' . $identifier])->personnel_capacity);
+        // get capacity of room in selected day
+        $room = Room::find($request['room_' . $identifier]);
+        $calendar = Calendar::firstWhere('date', Carbon::parse($selected_work_day)->toDateTimeString());
+        $room_ids = $calendar->schedules->pluck('room_id')->toArray();
+        $room_count = array_count_values($room_ids)[$room->id] ?? 0;
 
         try {
-            // first check if selected room is equal to previous one or not
-            if ($room->find($request['room_' . $identifier])->id != $schedule->room_id) {
-                // check if room has capacity or not
-                if ($room_capacity > 0) {
-                    $room_capacity -= 1;
-
-                    // update new personnel capacity of room in DB
-                    $room->update([
-                        'personnel_capacity' => $room_capacity
-                    ]);
-
-                    // restore value of previous room's capacity
-                    $previous_room = Room::where('id', $schedule->room_id);
-                    $previous_room_capacity = intval(Room::find($schedule->room_id)->personnel_capacity);
-                    $previous_room->update([
-                        'personnel_capacity' => $previous_room_capacity + 1
-                    ]);
-                } else {
+            // check if selected room == room saved in DB => ignore personnel_capacity
+            if (! $room->id == $schedule->room_id) {
+                if ($room_count >= $room->personnel_capacity) {
                     Alert::error('خطا!','ظرفیت اتاق تکمیل میباشد!');
 
                     // JSON response
@@ -314,13 +295,6 @@ class ScheduleController extends Controller
         }
 
         try {
-            // restore room's personnel capacity
-            $room = Room::where('id', $schedule->room_id);
-            $room_previous_capacity = intval(Room::find($schedule->room_id)->personnel_capacity);
-            $room->update([
-                'personnel_capacity' => $room_previous_capacity + 1
-            ]);
-            
             $schedule->deleteOrFail();
 
             // success alert

@@ -10,6 +10,11 @@ use Illuminate\Validation\Rule;
 
 class FromTimeValidation implements ValidationRule
 {
+    protected $time;
+
+    public function __construct($time) {
+        $this->time = $time;
+    }
     /**
      * Run the validation rule.
      *
@@ -18,8 +23,8 @@ class FromTimeValidation implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         try {
-            $from_date = Carbon::parse($value)->toTimeString();
-            $now = Carbon::now('Asia/Tehran')->toTimeString();
+            $from_date = $this->time;
+            $now = Carbon::now('Asia/Tehran')->toDateTimeString();
 
             if ($from_date < $now) {
                 $fail('مقدار زمان آغاز شیفت نمیتواند کمتر از زمان حال باشد');

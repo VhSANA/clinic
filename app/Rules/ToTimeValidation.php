@@ -24,9 +24,9 @@ class ToTimeValidation implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         try {
-            $from_date = Carbon::parse($this->from_date)->toTimeString();
-            $to_date = Carbon::parse($value)->toTimeString();
-            $now = Carbon::now('Asia/Tehran')->toTimeString();
+            $from_date = $this->from_date;
+            $to_date = Carbon::parse($from_date)->toDateString() . ' ' . Carbon::parse($value)->toTimeString();
+            $now = Carbon::now('Asia/Tehran')->toDateTimeString();
 
             if ($to_date < $now) {
                 $fail('مقدار زمان وارد شده نمیتواند کمتر از زمان حال باشد');
