@@ -24,22 +24,8 @@ class ScheduleController extends Controller
     public function index(Request $request)
     {
     // get data from DB
-        // schedule
-        $schedules = Schedule::all();
-
         // personnel
         $personnels = Personnel::query()->paginate(perPage: 3);
-
-        $chosen_personnels = [];
-        if (! $schedules->isEmpty()) {
-            foreach ($schedules as $schedule) {
-                array_push($chosen_personnels, $schedule->personnel_id);
-            }
-        }
-
-        if ($request['personnel_id']) {
-            array_push($chosen_personnels,  $request['personnel_id']);
-        }
 
         // room
         $rooms = Room::all();
@@ -50,6 +36,8 @@ class ScheduleController extends Controller
             $currentDate = Carbon::parse($request['week']);
         } else if ($request->has('gotodate')) {
             $currentDate = Carbon::parse($request['gotodate']);
+        } else if ($request->has('selectedWeek')) {
+            $currentDate = Carbon::parse($request['selectedWeek']);
         }
 
         // define firstday as satureday and lastday of week as friday
@@ -57,12 +45,26 @@ class ScheduleController extends Controller
         $endOfWeek = $startOfWeek->copy()->addDays(6);
 
         // Retrieve calendar entries for the current week
-        $calendars = Calendar::whereBetween('date', [$startOfWeek, $endOfWeek])->get();
+        $calendars = Calendar::whereBetween('date', [$startOfWeek, $endOfWeek])->with('schedules')->get();
+
+        // Extract schedules from the calendars
+        $schedules = collect();
+        foreach ($calendars as $calendar) {
+            $schedules = $schedules->merge($calendar->schedules);
+        }
+
+        // Get the list of personnel IDs who have shifts in the current week
+        $chosen_personnels = $schedules->pluck('personnel_id')->unique()->toArray();
+
+        // If a personnel is selected via the request, add it to the chosen_personnels array
+        if ($request['personnel_id']) {
+            array_push($chosen_personnels, $request['personnel_id']);
+        }
 
         // Convert dates to Jalalian
         $startOfWeekJalali = jdate($startOfWeek);
         $endOfWeekJalali = jdate($endOfWeek);
-
+// dd($currentDate);
         return view('admin.schedule.all-schedule', [
             'schedules' => $schedules,
             'calendars' => $calendars,
@@ -71,8 +73,8 @@ class ScheduleController extends Controller
             'currentDate' => $currentDate,
             'personnels' => $personnels,
             'chosen_personnels' => $chosen_personnels,
-            // 'chosen_personnel' => $chosen_personnel,
             'rooms' => $rooms,
+            'selectedWeek' => $currentDate->toDateString()
         ]);
     }
 

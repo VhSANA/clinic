@@ -3,6 +3,7 @@
     'modal_title',
     'model',
     'path',
+    'selectedWeek'
 ])
 
 <x-modal-with-toggle
@@ -45,6 +46,7 @@
                     <form action="{{route('schedule.index')}}" method="get">
                         @csrf
                         <input type="hidden" name="personnel_id" value="{{ $item->id }}">
+                        <input type="hidden" name="selectedWeek" value="{{ $selectedWeek }}">
                         <button type="submit" class="font-medium ml-5 text-green-600 dark:text-blue-500 hover:underline">
                             <x-add-icon />
                         </button>

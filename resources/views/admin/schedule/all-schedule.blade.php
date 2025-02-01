@@ -17,40 +17,41 @@
                                 <div class="flex justify-between items-center">
                                     <div class="flex flex-col justify-start items-start">
                                         <div class="flex justify-between items-center gap-2">
-                                            <form action="{{ route('schedule.index', [ 'personnel_id' => session('personnel_id')]) }}" method="GET">
+                                            <form action="{{ route('schedule.index') }}" method="GET">
                                                 @csrf
                                                 <input type="hidden" name="week" value="{{ $currentDate->copy()->subWeek()->format('Y-m-d') }}">
+                                                <input type="hidden" name="selectedWeek" value="{{ $selectedWeek }}">
                                                 <x-app.button.right-arrow>هفته قبلی</x-app.button.right-arrow>
                                             </form>
                                             <form action="{{ route('schedule.index') }}" method="get">
                                                 @csrf
+                                                <input type="hidden" name="selectedWeek" value="{{ $selectedWeek }}">
                                                 <button type="submit" class="flex justify-between items-center gap-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3  mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 transition">هفته جاری</button>
                                             </form>
                                             <form action="{{ route('schedule.index') }}" method="GET">
                                                 @csrf
                                                 <input type="hidden" name="week" value="{{ $currentDate->copy()->addWeek()->format('Y-m-d') }}">
+                                                <input type="hidden" name="selectedWeek" value="{{ $selectedWeek }}">
                                                 <x-app.button.left-arrow >هفته بعدی</x-app.button.left-arrow>
                                             </form>
                                         </div>
-                                        <form action="{{ route('schedule.index', ['personnel_id' => session('personnel_id') ]) }}" method="GET" class="flex items-center gap-2 mb-2">
+                                        <form action="{{ route('schedule.index',) }}" method="GET" class="flex items-center gap-2 mb-2">
                                             {{-- TODO change the view of this calender to persian calender but retrieve in georgian --}}
                                             @csrf
-                                            {{-- @if (session('personnel_id'))
-                                                <input type="hidden" name="personnel_id" value="{{ session('personnel_id') }}">
-                                            @endif --}}
                                             <div class="relative">
                                                 <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                                                     <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                                                         <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
                                                     </svg>
                                                 </div>
+                                                <input type="hidden" name="selectedWeek" value="{{ $selectedWeek }}">
                                                 <input id="datepicker-range-start" name="gotodate" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="برو به تاریخ">
                                             </div>
                                             <button type="submit" class="flex justify-between items-center gap-2 text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none dark:focus:ring-gray-800 transition">برو</button>
                                         </form>
                                     </div>
                                     <div class="flex">
-                                        <x-app.modal.choose-personnel button_title="انتخاب پرسنل" modal_title="یکی از پرسنل های زیر را انتخاب کنید" path="App\Models\Personnel" :model="$personnels" />
+                                        <x-app.modal.choose-personnel button_title="انتخاب پرسنل" modal_title="یکی از پرسنل های زیر را انتخاب کنید" path="App\Models\Personnel" :model="$personnels" selectedWeek="{{$selectedWeek}}" />
                                     </div>
                                 </div>
                                 <table class="table-auto w-full border-t p-4">
