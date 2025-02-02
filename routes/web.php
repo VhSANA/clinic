@@ -67,7 +67,11 @@ Route::resource('personnel-service', PersonnelServiceController::class);
 // calendar
 Route::resource('calendar', CalendarController::class)->except(['create', 'show', 'edit']);
 
-// calendar
+// schedule
 Route::resource('schedule', ScheduleController::class)->except(['create', 'show', 'edit']);
+Route::prefix('schedule')->controller(ScheduleController::class)->group(function () {
+    Route::post('/{schedule}/copy', 'copy')->name('schedule.copy');
+    Route::post('/{personnel}/{date}/paste', 'paste')->name('schedule.paste');
+});
 
 require __DIR__.'/auth.php';

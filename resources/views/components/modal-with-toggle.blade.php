@@ -43,10 +43,19 @@
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     const page = urlParams.get('page');
+    const search = urlParams.get('search');
     const personnelModal = document.getElementById('choose-personnel-modal');
 
     // pop up personnel modal going through pages
     if (page) {
+        document.addEventListener('DOMContentLoaded', function () {
+            personnelModal.classList.remove('hidden');
+            personnelModal.classList.add('flex');
+        });
+    }
+
+    // pop up modal after searching user
+    if (search) {
         document.addEventListener('DOMContentLoaded', function () {
             personnelModal.classList.remove('hidden');
             personnelModal.classList.add('flex');

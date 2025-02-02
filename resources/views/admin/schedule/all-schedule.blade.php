@@ -16,6 +16,7 @@
                             <div id="calendar" class="flex flex-col bg-white text-gray-800">
                                 <div class="flex justify-between items-center">
                                     <div class="flex flex-col justify-start items-start">
+                                        <h3 class="font-bold mb-2">تاریخ امروز: {{ jdate(Carbon\Carbon::now())->format('%A، %d %B %Y') }}</h3>
                                         <div class="flex justify-between items-center gap-2">
                                             <form action="{{ route('schedule.index') }}" method="GET">
                                                 @csrf
@@ -25,7 +26,6 @@
                                             </form>
                                             <form action="{{ route('schedule.index') }}" method="get">
                                                 @csrf
-                                                <input type="hidden" name="selectedWeek" value="{{ $selectedWeek }}">
                                                 <button type="submit" class="flex justify-between items-center gap-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3  mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 transition">هفته جاری</button>
                                             </form>
                                             <form action="{{ route('schedule.index') }}" method="GET">
@@ -64,139 +64,122 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @if ($schedules->isEmpty())
-                                            @if (empty($chosen_personnels))
-                                                <tr>
-                                                    <td class="border p-4 text-center rounded m-2">
-                                                        <div class="text-gray-700 font-bold mb-2">schedule's table is empty پرسنل مورد نظر را انتخاب کنید</div>
-                                                    </td>
-                                                </tr>
-                                            @elseif ($chosen_personnels)
-                                                @foreach ($chosen_personnels as $id)
+                                        @if (empty($chosen_personnels))
+                                        <tr>
+                                            <td class="border p-4 text-center rounded m-2 ">
+                                                <div class="text-gray-700 font-bold mb-2">at least one row in schedule's table پرسنل مورد نظر را انتخاب کنید</div>
+                                            </td>
+                                        </tr>
+                                    @elseif($chosen_personnels)
+                                        {{-- prevent from repeated rows for same personnel_id --}}
+                                        @php
+                                            $unique_personnels = collect($chosen_personnels)->unique();
+                                        @endphp
+                                        @foreach ($unique_personnels as $id)
+                                            @php
+                                                $chosen_personnel = App\Models\Personnel::find($id);
+                                            @endphp
+                                            <tr>
+                                                <td class="border p-4 text-center rounded m-2 ">
+                                                    {{ $chosen_personnel->full_name }}
+                                                </td>
+                                                @for ($date = $startOfWeek; $date <= ($endOfWeek); $date = $date->addDay())
                                                     @php
-                                                        $chosen_personnel = App\Models\Personnel::find($id);
+                                                        $carbonDate = $date->toCarbon()->toDateTimeString();
+                                                        $calendarEntry = $calendars->firstWhere('date', $carbonDate);
+                                                        $personnelSchedules = $calendarEntry ? $calendarEntry->schedules->where('personnel_id', $chosen_personnel->id)->unique() : collect([]);
                                                     @endphp
-                                                    <tr>
-                                                        <td class="border p-4 text-center rounded m-2">
-                                                            {{ $chosen_personnel->full_name }}
-                                                        </td>
-                                                        @for ($date = $startOfWeek; $date <= ($endOfWeek); $date = $date->addDay())
-                                                            @php
-                                                                $carbonDate = $date->toCarbon()->toDateTimeString();
-                                                                $calendarEntry = $calendars->firstWhere('date', $carbonDate);
-                                                            @endphp
-                                                            <td class="border p-4 text-center rounded m-2 transition {{ (! is_null($calendarEntry) && $calendarEntry->is_holiday == 1) ? 'bg-gray-200 ' : ''}}">
-                                                                <div class="flex flex-col justify-center items-center">
-                                                                    <div class="text-gray-700 font-bold mb-2">{{ $date->format('%d %B %Y') }}</div>
-                                                                    @if ($calendarEntry && $calendarEntry->is_holiday == 0)
+                                                    <td class="border p-4 text-center rounded m-2 transition {{ (! is_null($calendarEntry) && $calendarEntry->is_holiday == 1) ? 'bg-gray-200 ' : ''}}">
+                                                        <div class="flex flex-col justify-center items-center">
+                                                            <div class="text-gray-700 font-bold mb-2">{{ $date->format('%d %B %Y') }}</div>
+                                                            @if ($calendarEntry && $calendarEntry->is_holiday == 0)
+                                                                @if ($personnelSchedules->isEmpty())
+                                                                    <div class="flex gap-2">
                                                                         <x-app.modal.add-work-shift :rooms="$rooms" personnel="{{$chosen_personnel->id}}" schedule_date="{{$calendarEntry->id}}" />
-                                                                    @else
-                                                                        @if (! is_null($calendarEntry) && $calendarEntry->is_holiday == 1)
-                                                                            <p class="text-red-500 font-bold">تعطیل</p>
-                                                                        @else
-                                                                            <p class="text-red-500 font-bold">روز کاری ثبت نشده است</p>
-                                                                        @endif
-                                                                    @endif
-                                                                </div>
-                                                            </td>
-                                                        @endfor
-                                                    </tr>
-                                                @endforeach
-                                            @endif
-                                        @else
-                                            @if (empty($chosen_personnels))
-                                                <tr>
-                                                    <td class="border p-4 text-center rounded m-2 ">
-                                                        <div class="text-gray-700 font-bold mb-2">at least one row in schedule's table پرسنل مورد نظر را انتخاب کنید</div>
-                                                    </td>
-                                                </tr>
-                                            @elseif($chosen_personnels)
-                                                {{-- prevent from repeated rows for same personnel_id --}}
-                                                @php
-                                                    $unique_personnels = collect($chosen_personnels)->unique();
-                                                @endphp
-                                                @foreach ($unique_personnels as $id)
-                                                    @php
-                                                        $chosen_personnel = App\Models\Personnel::find($id);
-                                                    @endphp
-                                                    <tr>
-                                                        <td class="border p-4 text-center rounded m-2 ">
-                                                            {{ $chosen_personnel->full_name }}
-                                                        </td>
-                                                        @for ($date = $startOfWeek; $date <= ($endOfWeek); $date = $date->addDay())
-                                                            @php
-                                                                $carbonDate = $date->toCarbon()->toDateTimeString();
-                                                                $calendarEntry = $calendars->firstWhere('date', $carbonDate);
-                                                                $personnelSchedules = $calendarEntry ? $calendarEntry->schedules->where('personnel_id', $chosen_personnel->id)->unique() : collect([]);
-                                                            @endphp
-                                                            <td class="border p-4 text-center rounded m-2 transition {{ (! is_null($calendarEntry) && $calendarEntry->is_holiday == 1) ? 'bg-gray-200 ' : ''}}">
-                                                                <div class="flex flex-col justify-center items-center">
-                                                                    <div class="text-gray-700 font-bold mb-2">{{ $date->format('%d %B %Y') }}</div>
-                                                                    @if ($calendarEntry && $calendarEntry->is_holiday == 0)
-                                                                        @if ($personnelSchedules->isEmpty())
-                                                                            <x-app.modal.add-work-shift :rooms="$rooms" personnel="{{$chosen_personnel->id}}" schedule_date="{{$calendarEntry->id}}" />
-                                                                        @else
-                                                                            @php
-                                                                                $totalSchedules = count($personnelSchedules);
-                                                                            @endphp
-                                                                            @foreach ($personnelSchedules as $index => $schedule)
-                                                                                <div class="flex flex-col justify-center items-center">
-                                                                                    <div class="flex flex-col justify-center items-center">
-                                                                                        @if ($index > 0)
-                                                                                            <hr class="w-64 h-px my-4 bg-gray-200 border-0 dark:bg-gray-700">
-                                                                                        @endif
-                                                                                        <div class="flex flex-col gap-1">
-                                                                                            <p>
-                                                                                                عنوان شیفت: <strong>{{ $schedule->title }}</strong>
-                                                                                            </p>
-                                                                                            <p>
-                                                                                                از ساعت: <strong>{{ jdate($schedule->from_date)->format('H:i') }}</strong>
-                                                                                            </p>
-                                                                                            <p>
-                                                                                                تا ساعت: <strong>{{ jdate($schedule->to_date)->format('H:i') }}</strong>
-                                                                                            </p>
-                                                                                            <p>
-                                                                                                در اتاق: <strong>{{ App\Models\Room::find($schedule->room_id)->title }}</strong>
-                                                                                            </p>
-                                                                                            <p>
-                                                                                                خدمت درمانی: <strong>{{ App\Models\MedicalServices::find($schedule->medical_service_id)->name }}</strong>
-                                                                                            </p>
-                                                                                        </div>
-                                                                                        <div class="mt-3 flex justify-center items-center gap-2">
-                                                                                            <form action="{{ route('schedule.destroy', $schedule->id) }}" class="flex items-center justify-center" method="post">
-                                                                                                @csrf
-                                                                                                @method('DELETE')
-                                                                                                <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-semibold trash-toggle">
-                                                                                                    <x-icons.trash />
-                                                                                                </button>
-                                                                                            </form>
-                                                                                            <x-app.modal.edit-work-shift-modal :rooms="$rooms" personnel="{{$chosen_personnel->id}}" schedule_date="{{$calendarEntry->id}}"
-                                                                                            :schedule="$schedule" />
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    @if ($index == $totalSchedules - 1)
-                                                                                        <div class="flex flex-col items-center justify-center w-full">
-                                                                                            <hr class="w-64 h-px my-4 bg-gray-200 border-0 dark:bg-gray-700">
-                                                                                            <x-app.modal.add-work-shift :rooms="$rooms" personnel="{{$chosen_personnel->id}}" schedule_date="{{$calendarEntry->id}}"  />
-                                                                                        </div>
-                                                                                    @endif
+                                                                        <form action="{{route('schedule.paste', [ 'personnel' => $chosen_personnel->id, 'date' => $calendarEntry->id] )}}" method="post">
+                                                                            @csrf
+                                                                            <button
+                                                                                class="text-purple-600 hover:text-purple-800 transition" type="submit">
+                                                                                <x-icons.paste-icon />
+                                                                            </button>
+                                                                        </form>
+                                                                    </div>
+                                                                @else
+                                                                    @php
+                                                                        $totalSchedules = count($personnelSchedules);
+                                                                    @endphp
+                                                                    @foreach ($personnelSchedules as $index => $schedule)
+                                                                        <div class="flex flex-col justify-center items-center">
+                                                                            <div class="flex flex-col justify-center items-center">
+                                                                                @if ($index > 0)
+                                                                                    <hr class="w-64 h-px my-4 bg-gray-200 border-0 dark:bg-gray-700">
+                                                                                @endif
+                                                                                <div class="flex flex-col gap-1">
+                                                                                    <p>
+                                                                                        عنوان شیفت: <strong>{{ $schedule->title }}</strong>
+                                                                                    </p>
+                                                                                    <p>
+                                                                                        از ساعت: <strong>{{ jdate($schedule->from_date)->format('H:i') }}</strong>
+                                                                                    </p>
+                                                                                    <p>
+                                                                                        تا ساعت: <strong>{{ jdate($schedule->to_date)->format('H:i') }}</strong>
+                                                                                    </p>
+                                                                                    <p>
+                                                                                        در اتاق: <strong>{{ App\Models\Room::find($schedule->room_id)->title }}</strong>
+                                                                                    </p>
+                                                                                    <p>
+                                                                                        خدمت درمانی: <strong>{{ App\Models\MedicalServices::find($schedule->medical_service_id)->name }}</strong>
+                                                                                    </p>
                                                                                 </div>
-                                                                            @endforeach
-                                                                        @endif
-                                                                    @else
-                                                                        @if (! is_null($calendarEntry) && $calendarEntry->is_holiday == 1)
-                                                                            <p class="text-red-500 font-bold">تعطیل</p>
-                                                                        @else
-                                                                            <p class="text-red-500 font-bold">روز کاری ثبت نشده است</p>
-                                                                        @endif
-                                                                    @endif
-                                                                </div>
-                                                            </td>
-                                                        @endfor
-                                                    </tr>
-                                                @endforeach
-                                            @endif
-                                        @endif
+                                                                                <div class="mt-3 flex justify-center items-center gap-2">
+                                                                                    <form action="{{ route('schedule.destroy', $schedule->id) }}" class="flex items-center justify-center" method="post">
+                                                                                        @csrf
+                                                                                        @method('DELETE')
+                                                                                        <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-semibold trash-toggle">
+                                                                                            <x-icons.trash />
+                                                                                        </button>
+                                                                                    </form>
+                                                                                    <x-app.modal.edit-work-shift-modal :rooms="$rooms" personnel="{{$chosen_personnel->id}}" schedule_date="{{$calendarEntry->id}}"
+                                                                                        :schedule="$schedule" />
+                                                                                    <form action="{{ route('schedule.copy', $schedule->id ) }}" class="flex items-center justify-center" method="post">
+                                                                                        @csrf
+                                                                                        <button type="submit" class="text-green-500 hover:text-green-700 text-sm font-semibold trash-toggle">
+                                                                                            <x-icons.copy-icon />
+                                                                                        </button>
+                                                                                    </form>
+                                                                                </div>
+                                                                            </div>
+                                                                            @if ($index == $totalSchedules - 1)
+                                                                                <div class="flex flex-col items-center justify-center w-full">
+                                                                                    <hr class="w-64 h-px my-4 bg-gray-200 border-0 dark:bg-gray-700">
+                                                                                    <div class="flex gap-2">
+                                                                                        <x-app.modal.add-work-shift :rooms="$rooms" personnel="{{$chosen_personnel->id}}" schedule_date="{{$calendarEntry->id}}" />
+                                                                                        <form action="{{route('schedule.paste', ['personnel' => $chosen_personnel->id, 'date' => $calendarEntry->id] )}}" method="post">
+                                                                                            @csrf
+                                                                                            <button
+                                                                                                class="text-purple-600 hover:text-purple-800 transition" type="submit">
+                                                                                                <x-icons.paste-icon />
+                                                                                            </button>
+                                                                                        </form>
+                                                                                    </div>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                    @endforeach
+                                                                @endif
+                                                            @else
+                                                                @if (! is_null($calendarEntry) && $calendarEntry->is_holiday == 1)
+                                                                    <p class="text-red-500 font-bold">تعطیل</p>
+                                                                @else
+                                                                    <p class="text-red-500 font-bold">روز کاری ثبت نشده است</p>
+                                                                @endif
+                                                            @endif
+                                                        </div>
+                                                    </td>
+                                                @endfor
+                                            </tr>
+                                        @endforeach
+                                    @endif
                                     </tbody>
                                 </table>
                             </div>
