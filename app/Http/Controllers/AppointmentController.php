@@ -12,6 +12,7 @@ use App\Models\Room;
 use App\Models\Schedule;
 use App\Rules\TimeLimitValidation;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use RealRashid\SweetAlert\Facades\Alert;
@@ -24,66 +25,80 @@ class AppointmentController extends Controller
      */
     public function appointment(Request $request)
     {
-        // get patients
-        $chosen_patient = null;
+        try {
+            // get patients
+            $chosen_patient = null;
 
-        // search patient
-        if ($request->has('search_patient')) {
-            $keyword = $request->input('search_patient');
+            // search patient
+            if ($request->has('search_patient')) {
+                $keyword = $request->input('search_patient');
 
-            $chosen_patient = Patient::query()->where('national_code', 'like', "%$keyword%")->first();
-        } else
-        // select patient
-        if ($request->has('select_patient')) {
-            $keyword = $request->input('select_patient');
+                $chosen_patient = Patient::query()->where('national_code', 'like', "%$keyword%")->first();
+            } else
+            // select patient
+            if ($request->has('select_patient')) {
+                $keyword = $request->input('select_patient');
 
-            $chosen_patient = Patient::query()->find($keyword);
-        }
+                $chosen_patient = Patient::query()->find($keyword);
+            }
 
-        // Determine the start and end dates of the current week
-        $currentDate = Carbon::now();
-        if ($request->has('week')) {
-            $currentDate = Carbon::parse($request['week']);
-        }
+            // Determine the start and end dates of the current week
+            $currentDate = Carbon::now();
+            if ($request->has('week')) {
+                $currentDate = Carbon::parse($request['week']);
+            }
 
-        // Define the start of week as saturday and friday as end of week because of Persian calendar
-        $startOfWeek = $currentDate->copy()->startOfWeek(6);
-        $endOfWeek = $startOfWeek->copy()->addDays(6);
+            // Define the start of week as saturday and friday as end of week because of Persian calendar
+            $startOfWeek = $currentDate->copy()->startOfWeek(6);
+            $endOfWeek = $startOfWeek->copy()->addDays(6);
 
-        // get calendar
-        $calendars = Calendar::whereBetween('date', [$startOfWeek, $endOfWeek])->with('schedules')->get();
+            // get calendar
+            $calendars = Calendar::whereBetween('date', [$startOfWeek, $endOfWeek])->with('schedules')->get();
 
-        // Extract schedules from the calendars
-        $schedules = $calendars->flatMap(function ($calendar) {
-            return $calendar->schedules->map(function ($schedule) use ($calendar) {
-                return [
-                    'id' => $schedule->id,
-                    'schedule_date' => jdate($calendar->date)->format('%A، %d %B %Y'),
-                    'personnel' => Personnel::find($schedule->personnel_id),
-                    'service' => MedicalServices::find($schedule->medical_service_id),
-                    'from_date' => jdate($schedule->from_date)->format('H:i'),
-                    'to_date' => jdate($schedule->to_date)->format('H:i'),
-                    'room' => Room::find($schedule->room_id)->title,
-                ];
+            // Extract schedules from the calendars
+            $schedules = $calendars->flatMap(function ($calendar) {
+                return $calendar->schedules->map(function ($schedule) use ($calendar) {
+                    return [
+                        'id' => $schedule->id,
+                        'schedule_date' => jdate($calendar->date)->format('%A، %d %B %Y'),
+                        'personnel' => Personnel::find($schedule->personnel_id),
+                        'service' => MedicalServices::find($schedule->medical_service_id),
+                        'from_date' => jdate($schedule->from_date)->format('H:i'),
+                        'to_date' => jdate($schedule->to_date)->format('H:i'),
+                        'room' => Room::find($schedule->room_id)->title,
+                    ];
+                });
             });
-        });
 
-        // get appointmetns
-        $appointments = Appointment::all();
+            // get appointmetns
+            $appointments = Appointment::all();
 
-        // Convert dates to Jalalian
-        $startOfWeekJalali = jdate($startOfWeek);
-        $endOfWeekJalali = jdate($endOfWeek);
+            // Convert dates to Jalalian
+            $startOfWeekJalali = jdate($startOfWeek);
+            $endOfWeekJalali = jdate($endOfWeek);
 
-        return view('admin.appointments.appointment.patient-reception', [
-            'chosen_patient' => $chosen_patient,
-            'patients' => Patient::latest()->paginate(10),
-            'schedules' => $schedules,
-            'startOfWeek' => $startOfWeekJalali,
-            'endOfWeek' => $endOfWeekJalali,
-            'currentDate' => $currentDate,
-            'appointments' => $appointments,
-        ]);
+            return view('admin.appointments.appointment.patient-reception', [
+                'chosen_patient' => $chosen_patient,
+                'patients' => Patient::latest()->paginate(10),
+                'schedules' => $schedules,
+                'startOfWeek' => $startOfWeekJalali,
+                'endOfWeek' => $endOfWeekJalali,
+                'currentDate' => $currentDate,
+                'appointments' => $appointments,
+            ]);
+        } catch (Exception $e) {
+            Alert::toast('خطایی در دریافت اطلاعات رخ داده است.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'خطایی رخ داده است.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return back();
+        }
     }
 
     /**
@@ -212,21 +227,42 @@ class AppointmentController extends Controller
             // success alert
             Alert::success('عملیات موفقیت آمیز!', "ساعت {$request['time_' . $identifier]} با موفقیت برای $patient->full_name ثبت شد.");
 
+            return redirect(route('appointments.appointment'));
+        } catch (Exception $e) {
+            Alert::toast('خطایی رخ داده است.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'خطایی رخ داده است.',
+                    'status' => 'error'
+                ], 500);
+            }
+
             return back();
+        }
+    }
+
+    /**
+    * store validated data to DB
+    */
+    public function patientsList(Request $request)
+    {
+        try {
+            // default view of list
+            $showList = false;
+
+            // initial data values
+            $patients = Patient::all();
+            $appointments = Appointment::with('schedule.personnel', 'schedule.service', 'schedule.room', 'appointmentStatus')->get();
+
+            return view('admin.appointments.appointments.registered-patients-list', [
+                'showList' => $showList,
+                'patients' => $patients,
+                'appointments' => $appointments,
+            ]);
         } catch (Throwable $th) {
             throw $th;
-
-            // Alert::toast('خطایی رخ داده است.');
-
-            // // JSON response
-            // if (request()->expectsJson()) {
-            //     return response()->json([
-            //         'message' => 'خطایی رخ داده است.',
-            //         'status' => 'error'
-            //     ], 500);
-            // }
-
-            // return back();
         }
     }
 }

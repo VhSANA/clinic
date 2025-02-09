@@ -79,6 +79,10 @@ Route::prefix('schedule')->controller(ScheduleController::class)->group(function
 Route::prefix('appointments')->controller(AppointmentController::class)->group(function () {
     Route::get('appointment', 'appointment')->name('appointments.appointment');
     Route::post('appointment', 'store')->name('appointments.store');
+
+    // appointmentes list
+    Route::get('appointments/list', 'patientsList')->name('appointments.patients.list');
+    Route::post('appointments/list', 'patientsListStore')->name('appointments.patients.list.store');
 });
 
 require __DIR__.'/auth.php';

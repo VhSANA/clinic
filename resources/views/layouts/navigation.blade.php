@@ -128,6 +128,9 @@
                             <x-dropdown-link :href="route('appointments.appointment')">
                                 {{ __('نوبت دهی بیمار') }}
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('appointments.patients.list')">
+                                {{ __('پذیرش بیمار و صندوق') }}
+                            </x-dropdown-link>
                         </x-slot>
                     </x-dropdown>
                 </div>

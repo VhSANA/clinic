@@ -3,7 +3,7 @@
 @section('content')
 
 <div class="w-full">
-    <div class="flex flex-col justify-between gap-5">
+    <div class=" flex flex-col justify-between gap-5">
         {{-- search box --}}
         <div class="flex justify-between">
             <div class="relative">

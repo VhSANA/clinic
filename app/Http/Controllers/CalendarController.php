@@ -108,6 +108,7 @@ class CalendarController extends Controller
     public function destroy(Calendar $calendar)
     {
         // TODO add validation if admin tries to delete the day as work day, bans admin from that action if there was appointments added to that day
+        // TODO add for all methods if is happening in past show alert
         $calendar->deleteOrFail();
 
         // json respone and redirect
