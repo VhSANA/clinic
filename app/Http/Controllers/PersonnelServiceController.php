@@ -122,12 +122,6 @@ class PersonnelServiceController extends Controller
      */
     public function edit($id)
     {
-        // get all of personnels who are doctor and all medical services
-        $all_doctor_personnels = Personnel::whereHas('user.rules', function ($query) {
-            $query->where('title', 'doctor');
-        })->get();
-        $all_services = MedicalServices::all();
-
         // find medical_service_personnel which is going to be edited
         $personnel_service = DB::table('medical_services_personnel')->find($id);
 
@@ -138,8 +132,6 @@ class PersonnelServiceController extends Controller
         return view('admin.personnel-service.edit-personnel-service', [
             'personnel' => $personnel,
             'service' => $service,
-            'all_doctor_personnels' => $all_doctor_personnels,
-            'all_services' => $all_services,
             'personnel_service' => $personnel_service,
         ]);
     }
@@ -151,8 +143,6 @@ class PersonnelServiceController extends Controller
     {
         // validation
         $request->validate([
-            'personnel' => ['required', new PersonnelServiceValidation],
-            'service' => ['required', new ServiceValidation($request, $id)],
             'estimated_service_time' => [new EstimatedTimeValidation],
             'service_price' => [new ServicePriceValidation],
         ], [
@@ -160,18 +150,20 @@ class PersonnelServiceController extends Controller
             'service.required' => 'انتخاب خدمت درمانی الزامیست.',
         ]);
 
-        // sync with database
-        DB::table('medical_services_personnel')->where('id', $id)->update([
-            'medical_services_id' => $request['service'],
-            'personnel_id' => $request['personnel'],
-            'estimated_service_time' => $request['estimated_service_time'],
-            'service_price' => $request['service_price'],
-        ]);
+        try {
+            // sync with database
+            DB::table('medical_services_personnel')->where('id', $id)->update([
+                'estimated_service_time' => $request['estimated_service_time'],
+                'service_price' => $request['service_price'],
+            ]);
 
-        // json response
-        response()->json(['message' => 'done'], 200);
+            // json response
+            response()->json(['message' => 'done'], 200);
 
-        return redirect(route('personnel-service.index'));
+            return redirect(route('personnel-service.index'));
+        } catch (\Throwable $th) {
+            throw $th;
+        }
     }
 
     /**
@@ -179,6 +171,7 @@ class PersonnelServiceController extends Controller
      */
     public function destroy($id)
     {
+        // TODO check if appointment or shift is added and inoccupied then you cannot delete it
         DB::table('medical_services_personnel')->delete($id);
 
         response()->json([

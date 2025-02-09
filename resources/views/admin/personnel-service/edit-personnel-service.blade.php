@@ -10,28 +10,10 @@
                         @csrf
                         @method('PUT')
                         <!-- پرسنل ارائه دهنده -->
-                        <x-app.input.edit-inputs type="select" name="personnel" label="پرسنل ارائه دهنده"  >
-                            @foreach ($all_doctor_personnels as $doctor)
-                                <option
-                                    value="{{ $doctor->id }}"
-                                    {{ $doctor->id == $personnel->id ? 'selected' : ''}}
-                                >
-                                    {{ $doctor->user->user_title }} {{ $doctor->full_name }} به کد پرسنلی: {{ $doctor->personnel_code }}
-                                </option>
-                            @endforeach
-                        </x-app.input.edit-inputs>
+                        <x-app.input.disabled-inputs name="personnel" label="پرسنل انتخاب شده" value="{{ $personnel->full_name }}"/>
 
                         <!-- خدمت قابل ارائه -->
-                        <x-app.input.edit-inputs type="select" name="service" label="خدمت قابل ارائه"  >
-                            @foreach ($all_services as $medical_service)
-                                <option
-                                    value="{{ $medical_service->id }}"
-                                    {{ $medical_service->id == $service->id ? 'selected' : ''}}
-                                >
-                                    {{ $medical_service->name }}
-                                </option>
-                            @endforeach
-                        </x-app.input.edit-inputs>
+                        <x-app.input.disabled-inputs name="service" label="خدمت انتخاب شده" value="{{ $service->name }}"/>
 
                         <!-- مدت زمان تقریبی خدمت -->
                         <x-app.input.edit-inputs name="estimated_service_time" label="مدت زمان تقریبی خدمت (فقط عدد وارد کنید)" :value="$personnel_service->estimated_service_time" />
