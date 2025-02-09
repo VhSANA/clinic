@@ -60,4 +60,8 @@ class User extends Authenticatable
     {
         return $this->hasOne(Personnel::class);
     }
+    public function appointment()
+    {
+        return $this->hasOne(Appointment::class);
+    }
 }

@@ -16,5 +16,9 @@ class Room extends Model
         'personnel_capacity',
     ];
 
-    
+    // relations
+    public function schedule()
+    {
+        return $this->hasOne(Schedule::class);
+    }
 }

@@ -28,4 +28,16 @@ class Appointment extends Model
     {
         return $this->belongsTo(Schedule::class);
     }
+    public function appointmentStatus()
+    {
+        return $this->belongsTo(AppointmentsStatus::class, 'appointment_status_id');
+    }
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

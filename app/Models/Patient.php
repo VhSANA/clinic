@@ -32,4 +32,8 @@ class Patient extends Model
     {
         return $this->belongsTo(Insurance::class);
     }
+    public function appointment()
+    {
+        return $this->hasOne(Appointment::class);
+    }
 }

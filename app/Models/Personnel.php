@@ -24,4 +24,8 @@ class Personnel extends Model
     {
         return $this->belongsToMany(MedicalServices::class, 'medical_services_personnel')->withPivot('id','estimated_service_time', 'service_price');
     }
+    public function schedule()
+    {
+        return $this->hasOne(Schedule::class);
+    }
 }

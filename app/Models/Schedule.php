@@ -30,4 +30,16 @@ class Schedule extends Model
     {
         return $this->hasMany(Appointment::class);
     }
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
+    public function service()
+    {
+        return $this->belongsTo(MedicalServices::class, 'medical_service_id');
+    }
+    public function personnel()
+    {
+        return $this->belongsTo(Personnel::class);
+    }
 }
