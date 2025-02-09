@@ -71,7 +71,7 @@ class ScheduleController extends Controller
         // Convert dates to Jalalian
         $startOfWeekJalali = jdate($startOfWeek);
         $endOfWeekJalali = jdate($endOfWeek);
-// dd($currentDate);
+
         return view('admin.schedule.all-schedule', [
             'schedules' => $schedules,
             'calendars' => $calendars,

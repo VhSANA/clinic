@@ -14,5 +14,5 @@
             </div>
         </div>
     </div>
-    @yield('script')
+    {{-- @yield('script') --}}
 </x-app-layout>

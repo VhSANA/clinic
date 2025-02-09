@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\MedicalServicesController;
@@ -72,6 +73,12 @@ Route::resource('schedule', ScheduleController::class)->except(['create', 'show'
 Route::prefix('schedule')->controller(ScheduleController::class)->group(function () {
     Route::post('/{schedule}/copy', 'copy')->name('schedule.copy');
     Route::post('/{personnel}/{date}/paste', 'paste')->name('schedule.paste');
+});
+
+// appointments
+Route::prefix('appointments')->controller(AppointmentController::class)->group(function () {
+    Route::get('appointment', 'appointment')->name('appointments.appointment');
+    Route::post('appointment', 'store')->name('appointments.store');
 });
 
 require __DIR__.'/auth.php';

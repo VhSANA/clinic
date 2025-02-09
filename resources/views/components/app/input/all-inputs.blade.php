@@ -3,7 +3,8 @@
     'label',
     'type' => 'text',
     'placeholder' => null,
-    'checked'
+    'checked',
+    'initial' => 'یکی از گزینه ها را انتخاب کنید'
 ])
 
 @switch($type)
@@ -11,7 +12,7 @@
         <div class="mt-4">
             <x-input-label for="{{$name}}" class="mb-1" :value="__($label)" />
             <select name="{{$name}}" id="{{$name}}" class="rounded-lg border-gray-300 w-full placeholder-gray-300 ">
-                <option disabled selected>یکی از گزینه ها را انتخاب کنید</option>
+                <option disabled selected>{{ $initial }}</option>
                 {{ $slot }}
             </select>
             <x-input-error :messages="$errors->get($name)" class="mt-2" />

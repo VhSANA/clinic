@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('patient_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
-            $table->string('estimated_service_time');
+            $table->enum('appointment_type', ['normal', 'emergency', 'vip'])->default('normal');
+            $table->foreignId('introducer_id')->nullable()->constrained('users', 'id')->cascadeOnUpdate()->cascadeOnDelete();
             $table->text('description')->nullable();
+            $table->string('estimated_service_time');
             $table->foreignId('user_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
-            $table->string('appointment_type')->default(0);
-            $table->foreignId('canceled_user_id')->constrained('users', 'id')->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('canceled_user_id')->nullable()->constrained('users', 'id')->cascadeOnUpdate()->cascadeOnDelete();
             $table->timestamp('canceled_date')->nullable();
-            $table->foreignId('introducer_id')->constrained('users', 'id')->cascadeOnUpdate()->cascadeOnDelete();
             $table->timestamps();
         });
     }
