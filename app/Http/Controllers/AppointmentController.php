@@ -246,15 +246,15 @@ class AppointmentController extends Controller
     /**
     * store validated data to DB
     */
-    public function patientsList(Request $request)
+    public function patientsList()
     {
         try {
             // default view of list
-            $showList = false;
+            $showList = true;
 
             // initial data values
             $patients = Patient::all();
-            $appointments = Appointment::with('schedule.personnel', 'schedule.service', 'schedule.room', 'appointmentStatus')->get();
+            $appointments = Appointment::with('patient', 'schedule.personnel', 'schedule.service', 'schedule.room', 'appointmentStatus')->get();
 
             return view('admin.appointments.appointments.registered-patients-list', [
                 'showList' => $showList,
