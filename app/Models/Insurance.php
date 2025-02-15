@@ -20,4 +20,8 @@ class Insurance extends Model
     {
         return $this->hasOne(Patient::class);
     }
+    public function invoice()
+    {
+        return $this->hasOne(Invoice::class);
+    }
 }

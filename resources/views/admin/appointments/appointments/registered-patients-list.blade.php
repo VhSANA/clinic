@@ -49,42 +49,10 @@
                                     </thead>
                                     <tbody id="patients-table">
                                         @if ($showList)
+                                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                                <td colspan="8" class="flex justify-center items-center px-6 py-4">لطفا کمی صبر کنید ... </td>
+                                            </tr>
                                             @foreach ($appointments as $appointment)
-                                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                                    <th scope="row" class="flex items-center justify-center px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                        <div class="ps-3">
-                                                            <div class="text-base font-semibold px-6 py-4">{{ $appointment->patient->full_name }}</div>
-                                                        </div>
-                                                    </th>
-                                                    <td class="px-6 py-4">
-                                                        @if ($appointment->patient->is_foreigner)
-                                                            {{ $appointment->patient->passport_code }}
-                                                        @else
-                                                            {{ $appointment->patient->national_code }}
-                                                        @endif
-                                                    </td>
-                                                    <td class="px-6 py-4">
-                                                        <div class="flex flex-col">
-                                                            <p>خدمت: <strong>{{ $appointment->schedule->service->name }}</strong></p>
-                                                            <p>در اتاق: <strong>{{ $appointment->schedule->room->title }}</strong></p>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4">
-                                                        {{ $appointment->schedule->personnel->full_name }}
-                                                    </td>
-                                                    <td class="px-6 py-4">
-                                                        <div class="flex flex-col">
-                                                            <p>ساعت: <strong>{{ jdate($appointment->estimated_service_time)->format('H:i') }}</strong></p>
-                                                            <p>روز: <strong>{{ jdate($appointment->estimated_service_time)->format('%A, %d %B %Y') }}</strong></p>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4">
-                                                        {{ $appointment->appointmentStatus->status }}
-                                                    </td>
-                                                    <td class="px-6 py-4 text-center flex items-center justify-center">
-                                                        <a href="{{route('appointments.patients.list.store', 2)}}" class="font-medium ml-5 text-yellow-600 dark:text-yellow-500 hover:underline">صدور فاکتور</a>
-                                                    </td>
-                                                </tr>
                                             @endforeach
                                         @else
                                             <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -93,10 +61,10 @@
                                         @endif
                                     </tbody>
                                 </table>
-                                <div id="pagination" class="flex justify-center py-4">
-                                    <!-- JavaScript will populate this -->
-                                </div>
                             </div>
+                        </div>
+                        <div id="pagination" class="flex justify-center pt-4">
+                            <!-- JavaScript will populate this -->
                         </div>
                     </div>
                 </div>
@@ -105,8 +73,10 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // data from backedn
             const appointments = @json($appointments);
-            const showTable = @json($showList)
+            const showTable = @json($showList);
+            const showPaymentAndInvoiceModal = @json(session('show_payment_and_invoice_modal'));
 
             // value of inputs
             const search = document.getElementById('table-search');
@@ -119,6 +89,7 @@
             const rowsPerPage = 3;
             let currentPage = 1;
 
+        // Pagination
             // patients table with pagination logic
             function displayPatients(appointments, page) {
                 const start = (page - 1) * rowsPerPage;
@@ -131,11 +102,29 @@
                 // Render paginated patients
                 if (paginatedAppointments.length > 0) {
                     paginatedAppointments.forEach(appointment => {
+                        const serviceWithPrice = appointment.schedule.personnel.medicalservices.find(service => {
+                            if ((service.pivot.personnel_id == appointment.schedule.personnel.id) && (service.pivot.medical_services_id == appointment.schedule.service.id)) {
+                                return service;
+                            }
+                        });
+
                         // format estimated_service_time to Persian calendar
                         const visitTime = `${appointment.estimated_service_time.split(' ')[1].split(':')[0]}:${appointment.estimated_service_time.split(' ')[1].split(':')[1]}`;
                         const visitDate = convertToJalali(appointment.estimated_service_time.split(' ')[0]);
                         const persianDayOfWeek = getPersianDayOfWeek(appointment.estimated_service_time.split(' ')[0]);
                         const monthOfYear = getPersianMonthsOfYear(appointment.estimated_service_time.split(' ')[0]);
+
+                        // format registered visit time to Persian calendar
+                        const appointmentCreatedTime = new Date(appointment.created_at);
+                        const appointmentTime = `${appointmentCreatedTime.getHours()}:${appointmentCreatedTime.getMinutes()}`;
+                        const appointmentDate = convertToJalali(`${appointmentCreatedTime.getFullYear()}-${appointmentCreatedTime.getMonth()}-${appointmentCreatedTime.getDate() + 1}`);
+                        const appointmentDayOfWeek = getPersianDayOfWeek(`${appointmentCreatedTime.getFullYear()}-${appointmentCreatedTime.getMonth()}-${appointmentCreatedTime.getDate() + 3}`);
+                        const appointmentMonthOfYear = getPersianMonthsOfYear(`${appointmentCreatedTime.getFullYear()}-${appointmentCreatedTime.getMonth() + 1}-${appointmentCreatedTime.getDate()}`);
+
+                        // Use template literals correctly
+                        const invoiceContent = (appointment?.invoice?.appointment_id == appointment.id)
+                            ? invoiceDetails(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice)
+                            : issuanceOfNewInvoice(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice);
 
                         const row = document.createElement('tr');
                         row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700');
@@ -145,7 +134,7 @@
                                     <div class="text-base font-semibold px-6 py-4">${appointment.patient.full_name}</div>
                                 </div>
                             </th>
-                            <td class="px-6 py-4">${ appointment.patient.is_foreigner == true ? appointment.patient.passport_code : appointment.patient.national_code}</td>
+                            <td class="px-6 py-4">${ appointment.patient.is_foreigner == true ? appointment.patient.passport_code : appointment.patient.national_code }</td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col">
                                     <p>خدمت: <strong>${appointment.schedule.service.name}</strong></p>
@@ -161,11 +150,82 @@
                             </td>
                             <td class="px-6 py-4">${appointment.appointment_status.status}</td>
                             <td class="px-6 py-4 text-center flex items-center justify-center">
-                                <a href="{{ route('appointments.patients.list.store', '') }}/${appointment.patient.id}" class="font-medium ml-5 text-yellow-600 dark:text-yellow-500 hover:underline">صدور فاکتور</a>
+                                <button id="open-modal-btn-${appointment.id}" class="text-blue-600 hover:text-blue-800 transition" type="button">
+                                    <x-icons.work />
+                                </button>
+
+                                <div id="patient-invoice-modal-${appointment.id}" class="hidden bg-gray-500 bg-opacity-40 overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+                                    <div class="relative p-4 w-full max-w-7xl max-h-full">
+                                        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+                                            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                                    صدور فاکتور
+                                                </h3>
+                                                <button type="button" id="close-modal-btn-${appointment.id}" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                                                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                                    </svg>
+                                                    <span class="sr-only close">Close modal</span>
+                                                </button>
+                                            </div>
+                                            <div class="p-4 md:p-5">
+                                                <div class="max-w-5xl mx-auto relative" id="invoice-modal-details-${appointment.id}">
+                                                    ${invoiceContent}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         `;
                         patientsTable.appendChild(row);
-                        // از اینجا که یه مدال باز کنیم مونده
+
+                    // rendering Modal
+                        const identifier = appointment.id;
+                        const modal = document.getElementById(`patient-invoice-modal-${identifier}`);
+                        const openModal = document.getElementById(`open-modal-btn-${identifier}`);
+                        const closeModal = document.getElementById(`close-modal-btn-${identifier}`);
+                        const cancelModal = document.getElementById(`cancel-modal-btn-${identifier}`);
+                        const cancelReservation = document.getElementById(`cancel-reservation-modal-${identifier}`);
+                        const invoiceContentModal = document.getElementById(`invoice-modal-details-${identifier}`);
+
+                        // open modal if show_payment_and_invoice_modal session is available
+                        if (parseInt(showPaymentAndInvoiceModal) == identifier) {
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+                        }
+
+                        // Open Modal
+                        openModal.addEventListener('click', function() {
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+                        });
+
+                        // Close Modal
+                        closeModal.addEventListener('click', function() {
+                            modal.classList.add('hidden');
+                            modal.classList.remove('flex');
+                        });
+
+                        // Cancel Button
+                        cancelModal.addEventListener('click', function() {
+                            console.log('cancel modal')
+                            modal.classList.add('hidden');
+                            modal.classList.remove('flex');
+                        });
+
+                        // Cancel Reservation
+                        cancelReservation.addEventListener('click', function() {
+                            invoiceContentModal.innerHTML = cancelingReservation(appointment);
+                            const cancaelReservationBtn = document.getElementById(`cancel-reservation-btn-${identifier}`);
+
+                            cancaelReservationBtn.removeEventListener('click', cancelReservationHandler);
+                            cancaelReservationBtn.addEventListener('click', cancelReservationHandler);
+                        });
+
+                        function cancelReservationHandler() {
+                            invoiceContentModal.innerHTML = invoiceContent;
+                        }
                     });
                 } else {
                     const row = document.createElement('tr');
@@ -372,6 +432,241 @@
 
                 return button;
             }
+
+            // format price
+            function formatPrice(price) {
+                return new Intl.NumberFormat('fa-IR', {
+                    style: 'decimal',
+                    minimumFractionDigits: 0
+                }).format(price);
+            }
+
+            // initial view to submit for invoice
+            function issuanceOfNewInvoice(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice) {
+                return `<form class="w-full" action="{{ route('appointments.patients.list.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="appointment_id" value="${appointment.id}" />
+                    <div class="flex justify-between w-full gap-4">
+                        <div class="flex flex-col w-full justify-start">
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    مراجعه کننده
+                                </label>
+                                <input type="text" disabled value="${appointment.patient.full_name}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    موبایل مراجعه کننده
+                                </label>
+                                <input type="text" disabled value="${appointment.patient.mobile}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    پرسنل ارائه دهنده خدمت
+                                </label>
+                                <input type="text" disabled value="${appointment.schedule.personnel.full_name}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4 flex flex-col items-start">
+                                <div class="w-full">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        تخفیف
+                                    </label>
+                                    <input type="number" name="discount" placeholder="در صورت تخفیف، مقدار را به تومان وارد نمایید." class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+                                @error('discount')
+                                    <p class="text-sm text-red-600 dark:text-red-400 space-y-1 mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="flex flex-col w-full justify-start">
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    کدملی مراجعه کننده
+                                </label>
+                                <input type="text" disabled value="${ appointment.patient.is_foreigner == true ? appointment.patient.passport_code : appointment.patient.national_code }" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    تاریخ و ساعت دریافت نوبت
+                                </label>
+                                <input type="text" disabled value="${appointmentDayOfWeek}، ${appointmentDate.jd} ${appointmentMonthOfYear} ${appointmentDate.jy} ساعت ${appointmentTime}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    عنوان خدمت بهمراه قیمت به تومان
+                                </label>
+                                <input type="text" disabled value="خدمت ${appointment.schedule.service.name} به قیمت ${formatPrice(serviceWithPrice.pivot.service_price)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+                            <div class="mt-12">
+                                <x-app.button.add-btn >
+                                    صدور فاکتور
+                                </x-app.add-btn>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="absolute left-0 bottom-0 flex justify-end gap-5">
+                    <form action="{{ route('appointments.patients.list.destory', '') }}/${appointment.id}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="rounded-full gap-2 bg-red-600 dark:bg-red-800 text-white dark:text-white antialiased font-bold hover:bg-red-800 dark:hover:bg-red-900 px-4 py-2 flex items-center justify-between transition">
+                            حذف نوبت <x-icons.trash />
+                        </button>
+                    </form>
+                    <button type="submit" id="cancel-reservation-modal-${appointment.id}" class="rounded-full gap-2 bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
+                        کنسل کردن <x-cancel-icon />
+                    </button>
+                    <button type="button" id="cancel-modal-btn-${appointment.id}" class="rounded-full  bg-gray-600 dark:bg-gray-800 text-white dark:text-white antialiased font-bold hover:bg-gray-800 dark:hover:bg-gray-900 px-4 py-2 flex items-center justify-between transition">
+                        لغو
+                    </button>
+                </div>`;
+            }
+
+            // payment details modal
+            function invoiceDetails(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice) {
+                return `<form class="w-full" action="{{ route('appointment.invoice', '') }}/${appointment.invoice.id}" method="POST">
+                    @csrf
+                    <input type="hidden" name="invoice_id" value="${appointment.invoice.id}" />
+                    <div class="flex justify-between w-full gap-4">
+                        <div class="flex flex-col w-full justify-start">
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    نام مراجعه کننده
+                                </label>
+                                <input type="text" disabled value="${appointment.invoice.name} ${appointment.invoice.family}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    کدملی مراجعه کننده
+                                </label>
+                                <input type="text" disabled value="${ appointment.invoice.is_foreigner == true ? appointment.invoice.passport_code : appointment.invoice.national_code }" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    موبایل مراجعه کننده
+                                </label>
+                                <input type="text" disabled value="${appointment.invoice.patient_mobile}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    پرسنل ارائه دهنده خدمت
+                                </label>
+                                <input type="text" disabled value="${appointment.schedule.personnel.full_name}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    تاریخ و ساعت دریافت نوبت
+                                </label>
+                                <input type="text" disabled value="${appointmentDayOfWeek}، ${appointmentDate.jd} ${appointmentMonthOfYear} ${appointmentDate.jy} ساعت ${appointmentTime}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+                        </div>
+                        <div class="flex flex-col w-full justify-start">
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    عنوان خدمت بهمراه قیمت به تومان
+                                </label>
+                                <input type="text" disabled value="خدمت ${appointment.schedule.service.name} به قیمت ${formatPrice(serviceWithPrice.pivot.service_price)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="flex justify-between gap-2">
+                                <div class="mt-4 w-full">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        تخفیف
+                                    </label>
+                                    <input type="text" disabled value="${formatPrice(appointment.invoice.discount)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+                                <div class="mt-4 w-full">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        کسری بیمه
+                                    </label>
+                                    <input type="text" disabled value="${formatPrice(appointment.invoice.insurance_cost)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    مبلغ نهایی قابل پرداخت
+                                </label>
+                                <input type="text" disabled value="${formatPrice(appointment.invoice.total_to_pay)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    وضعیت فاکتور
+                                </label>
+                                <input type="text" disabled value="${appointment.invoice.invoice_status.status}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                            </div>
+
+                            <div class="mt-12">
+                                <button type="submit" class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
+                                    پرداخت فاکتور <x-icons.cash />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="absolute left-0 bottom-0 flex justify-end gap-4">
+                    <form action="{{ route('appointments.patients.list.store') }}/${appointment.id}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="rounded-full  bg-cyan-600 dark:bg-cyan-800 text-white dark:text-white antialiased font-bold hover:bg-cyan-800 gap-2 dark:hover:bg-cyan-900 px-4 py-2 flex items-center justify-between transition">
+                         چاپ فاکتور <x-icons.print />
+                        </button>
+                    </form>
+                    <button type="submit" id="cancel-reservation-modal-${appointment.id}" class="rounded-full bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 gap-2 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
+                        کنسل کردن <x-cancel-icon />
+                    </button>
+                    <button type="button" id="cancel-modal-btn-${appointment.id}" class="rounded-full  bg-gray-600 dark:bg-gray-800 text-white dark:text-white antialiased font-bold hover:bg-gray-800 dark:hover:bg-gray-900 px-4 py-2 flex items-center justify-between transition">
+                        لغو
+                    </button>
+                </div>`;
+            }
+
+            // canceling modal
+            function cancelingReservation(appointment) {
+                return `<form class="w-full" route('appointments.patients.list.cancel') }}/${appointment.id}" method="POST">
+                    @csrf
+                    <div class="flex justify-between w-full gap-4">
+                        <div class="flex flex-col w-full justify-start">
+                            <div class="flex flex-col">
+                                <div class="mt-4">
+                                    <label class="mb-2 block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        علت کنسل کردن نوبت رزرو شده*
+                                    </label>
+                                    <textarea name="cancel_description" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="توضیحی مختصر در مورد علت کنسلی نوبت رزرو شده بنویسید."></textarea>
+                                </div>
+                                @error('cancel_description')
+                                    <p class="text-sm text-red-600 dark:text-red-400 space-y-1 mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
+                            </div>
+
+                            <div class="mt-4 flex justify-end gap-4">
+                                <button type="submit" class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
+                                    ارسال
+                                </button>
+                                <button type="button" id="cancel-reservation-btn-${appointment.id}" class="rounded-full  bg-gray-600 dark:bg-gray-800 text-white dark:text-white antialiased font-bold hover:bg-gray-800 dark:hover:bg-gray-900 px-4 py-2 flex items-center justify-between transition">
+                                    لغو
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                    `;
+            }
+
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js"></script>
