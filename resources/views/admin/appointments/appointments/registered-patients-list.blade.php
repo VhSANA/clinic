@@ -77,6 +77,8 @@
             const appointments = @json($appointments);
             const showTable = @json($showList);
             const showPaymentAndInvoiceModal = @json(session('show_payment_and_invoice_modal'));
+            const discountValidationModal = @json(session('discount_validation'));
+            const cancelValidationModal = @json(session('cancel_validation'));
 
             // value of inputs
             const search = document.getElementById('table-search');
@@ -102,6 +104,7 @@
                 // Render paginated patients
                 if (paginatedAppointments.length > 0) {
                     paginatedAppointments.forEach(appointment => {
+                        // get a personnel's service price
                         const serviceWithPrice = appointment.schedule.personnel.medicalservices.find(service => {
                             if ((service.pivot.personnel_id == appointment.schedule.personnel.id) && (service.pivot.medical_services_id == appointment.schedule.service.id)) {
                                 return service;
@@ -123,8 +126,8 @@
 
                         // Use template literals correctly
                         const invoiceContent = (appointment?.invoice?.appointment_id == appointment.id)
-                            ? invoiceDetails(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice)
-                            : issuanceOfNewInvoice(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice);
+                            ? invoiceDetailsHandler(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice)
+                            : issuanceOfNewInvoiceHandler(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice);
 
                         const row = document.createElement('tr');
                         row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700');
@@ -148,9 +151,9 @@
                                     <p>روز: <strong>${persianDayOfWeek}، ${visitDate.jd} ${monthOfYear} ${visitDate.jy}</strong></p>
                                 </div>
                             </td>
-                            <td class="px-6 py-4">${appointment.appointment_status.status}</td>
+                            <td class="px-6 py-4 ${appointment.appointment_status.id == 3 ? 'text-red-600 font-bold' : 'font-bold'}">${appointment.appointment_status.status}</td>
                             <td class="px-6 py-4 text-center flex items-center justify-center">
-                                <button id="open-modal-btn-${appointment.id}" class="text-blue-600 hover:text-blue-800 transition" type="button">
+                                <button id="open-modal-btn-${appointment.id}" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="${appointment.appointment_status.id == 3 ? 'text-blue-600 hover:text-blue-800 opacity-40 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'} transition" type="button">
                                     <x-icons.work />
                                 </button>
 
@@ -169,8 +172,13 @@
                                                 </button>
                                             </div>
                                             <div class="p-4 md:p-5">
-                                                <div class="max-w-5xl mx-auto relative" id="invoice-modal-details-${appointment.id}">
-                                                    ${invoiceContent}
+                                                <div class="max-w-5xl mx-auto relative">
+                                                    <div class="" id="invoice-details-${appointment.id}">
+                                                        ${invoiceContent}
+                                                    </div>
+                                                    <div class="hidden" id="cancelation-modal-${appointment.id}" />
+                                                        ${cancelingReservation(appointment)}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -187,12 +195,28 @@
                         const closeModal = document.getElementById(`close-modal-btn-${identifier}`);
                         const cancelModal = document.getElementById(`cancel-modal-btn-${identifier}`);
                         const cancelReservation = document.getElementById(`cancel-reservation-modal-${identifier}`);
-                        const invoiceContentModal = document.getElementById(`invoice-modal-details-${identifier}`);
+                        const invoiceDetails = document.getElementById(`invoice-details-${identifier}`);
+                        const cancelationModal = document.getElementById(`cancelation-modal-${identifier}`);
 
                         // open modal if show_payment_and_invoice_modal session is available
                         if (parseInt(showPaymentAndInvoiceModal) == identifier) {
                             modal.classList.remove('hidden');
                             modal.classList.add('flex');
+                        }
+
+                        // validation error modal
+                        if (parseInt(discountValidationModal) == identifier) {
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+                        }
+
+                        // validation error modal
+                        if (parseInt(cancelValidationModal) == identifier) {
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+
+                            invoiceDetails.classList.add('hidden');
+                            cancelationModal.classList.remove('hidden');
                         }
 
                         // Open Modal
@@ -209,29 +233,27 @@
 
                         // Cancel Button
                         cancelModal.addEventListener('click', function() {
-                            console.log('cancel modal')
                             modal.classList.add('hidden');
                             modal.classList.remove('flex');
                         });
 
                         // Cancel Reservation
                         cancelReservation.addEventListener('click', function() {
-                            invoiceContentModal.innerHTML = cancelingReservation(appointment);
+                            invoiceDetails.classList.add('hidden');
+                            cancelationModal.classList.remove('hidden');
+
                             const cancaelReservationBtn = document.getElementById(`cancel-reservation-btn-${identifier}`);
-
-                            cancaelReservationBtn.removeEventListener('click', cancelReservationHandler);
-                            cancaelReservationBtn.addEventListener('click', cancelReservationHandler);
+                            cancaelReservationBtn.addEventListener('click', function () {
+                                invoiceDetails.classList.remove('hidden');
+                                cancelationModal.classList.add('hidden');
+                            });
                         });
-
-                        function cancelReservationHandler() {
-                            invoiceContentModal.innerHTML = invoiceContent;
-                        }
                     });
                 } else {
                     const row = document.createElement('tr');
                     row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700');
                     row.innerHTML = `
-                        <td colspan="8" class="px-6 py-4 flex">بیماری با مشخصات وارد شده یافت نشد</td>
+                        <td colspan="8" class="px-6 py-4 flex">بیماری یافت نشد</td>
                     `;
                     patientsTable.appendChild(row);
 
@@ -442,7 +464,7 @@
             }
 
             // initial view to submit for invoice
-            function issuanceOfNewInvoice(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice) {
+            function issuanceOfNewInvoiceHandler(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice) {
                 return `<form class="w-full" action="{{ route('appointments.patients.list.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="appointment_id" value="${appointment.id}" />
@@ -474,7 +496,7 @@
                                     <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
                                         تخفیف
                                     </label>
-                                    <input type="number" name="discount" placeholder="در صورت تخفیف، مقدار را به تومان وارد نمایید." class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                    <input type="number" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} name="discount" placeholder="در صورت تخفیف، مقدار را به تومان وارد نمایید." class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" value="{{ old('discount') }}">
                                 </div>
                                 @error('discount')
                                     <p class="text-sm text-red-600 dark:text-red-400 space-y-1 mt-1">
@@ -516,11 +538,11 @@
                     <form action="{{ route('appointments.patients.list.destory', '') }}/${appointment.id}" method="POST">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="rounded-full gap-2 bg-red-600 dark:bg-red-800 text-white dark:text-white antialiased font-bold hover:bg-red-800 dark:hover:bg-red-900 px-4 py-2 flex items-center justify-between transition">
+                        <button type="submit" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full gap-2 bg-red-600 dark:bg-red-800 text-white dark:text-white antialiased font-bold hover:bg-red-800 dark:hover:bg-red-900 px-4 py-2 flex items-center justify-between transition">
                             حذف نوبت <x-icons.trash />
                         </button>
                     </form>
-                    <button type="submit" id="cancel-reservation-modal-${appointment.id}" class="rounded-full gap-2 bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
+                    <button type="submit" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} id="cancel-reservation-modal-${appointment.id}" class="rounded-full gap-2 bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
                         کنسل کردن <x-cancel-icon />
                     </button>
                     <button type="button" id="cancel-modal-btn-${appointment.id}" class="rounded-full  bg-gray-600 dark:bg-gray-800 text-white dark:text-white antialiased font-bold hover:bg-gray-800 dark:hover:bg-gray-900 px-4 py-2 flex items-center justify-between transition">
@@ -530,7 +552,7 @@
             }
 
             // payment details modal
-            function invoiceDetails(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice) {
+            function invoiceDetailsHandler(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice) {
                 return `<form class="w-full" action="{{ route('appointment.invoice', '') }}/${appointment.invoice.id}" method="POST">
                     @csrf
                     <input type="hidden" name="invoice_id" value="${appointment.invoice.id}" />
@@ -609,7 +631,7 @@
                             </div>
 
                             <div class="mt-12">
-                                <button type="submit" class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
+                                <button type="submit" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
                                     پرداخت فاکتور <x-icons.cash />
                                 </button>
                             </div>
@@ -620,11 +642,11 @@
                     <form action="{{ route('appointments.patients.list.store') }}/${appointment.id}" method="POST">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="rounded-full  bg-cyan-600 dark:bg-cyan-800 text-white dark:text-white antialiased font-bold hover:bg-cyan-800 gap-2 dark:hover:bg-cyan-900 px-4 py-2 flex items-center justify-between transition">
+                        <button type="submit" class="rounded-full ${appointment.appointment_status.id == 3 ? 'disabled' : ''} bg-cyan-600 dark:bg-cyan-800 text-white dark:text-white antialiased font-bold hover:bg-cyan-800 gap-2 dark:hover:bg-cyan-900 px-4 py-2 flex items-center justify-between transition">
                          چاپ فاکتور <x-icons.print />
                         </button>
                     </form>
-                    <button type="submit" id="cancel-reservation-modal-${appointment.id}" class="rounded-full bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 gap-2 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
+                    <button type="submit" id="cancel-reservation-modal-${appointment.id}" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 gap-2 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
                         کنسل کردن <x-cancel-icon />
                     </button>
                     <button type="button" id="cancel-modal-btn-${appointment.id}" class="rounded-full  bg-gray-600 dark:bg-gray-800 text-white dark:text-white antialiased font-bold hover:bg-gray-800 dark:hover:bg-gray-900 px-4 py-2 flex items-center justify-between transition">
@@ -635,16 +657,17 @@
 
             // canceling modal
             function cancelingReservation(appointment) {
-                return `<form class="w-full" route('appointments.patients.list.cancel') }}/${appointment.id}" method="POST">
+                return `<form class="w-full" action="{{ route('appointments.patients.list.cancel', '') }}/${appointment.id}" method="POST">
                     @csrf
+                    @method('PUT')
                     <div class="flex justify-between w-full gap-4">
                         <div class="flex flex-col w-full justify-start">
-                            <div class="flex flex-col">
-                                <div class="mt-4">
+                            <div class="mt-4 flex flex-col items-start">
+                                <div class="w-full">
                                     <label class="mb-2 block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
                                         علت کنسل کردن نوبت رزرو شده*
                                     </label>
-                                    <textarea name="cancel_description" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="توضیحی مختصر در مورد علت کنسلی نوبت رزرو شده بنویسید."></textarea>
+                                    <textarea name="cancel_description" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="توضیحی مختصر در مورد علت کنسلی نوبت رزرو شده بنویسید.">{{ old('cancel_description') }}</textarea>
                                 </div>
                                 @error('cancel_description')
                                     <p class="text-sm text-red-600 dark:text-red-400 space-y-1 mt-1">
@@ -654,11 +677,11 @@
                             </div>
 
                             <div class="mt-4 flex justify-end gap-4">
-                                <button type="submit" class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
+                                <button type="submit" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
                                     ارسال
                                 </button>
                                 <button type="button" id="cancel-reservation-btn-${appointment.id}" class="rounded-full  bg-gray-600 dark:bg-gray-800 text-white dark:text-white antialiased font-bold hover:bg-gray-800 dark:hover:bg-gray-900 px-4 py-2 flex items-center justify-between transition">
-                                    لغو
+                                    بازگشت
                                 </button>
                             </div>
                         </div>

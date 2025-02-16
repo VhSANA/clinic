@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('canceled_user_id')->nullable()->constrained('users', 'id')->cascadeOnUpdate()->cascadeOnDelete();
             $table->timestamp('canceled_date')->nullable();
+            $table->text('cancel_description')->nullable();
             $table->timestamps();
         });
     }

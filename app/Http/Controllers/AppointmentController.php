@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\AppointmentStatus as AppointmentStatusEnum;
 use App\Models\Appointment;
 use App\Models\AppointmentsStatus;
 use App\Models\Calendar;
@@ -17,8 +18,11 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use RealRashid\SweetAlert\Facades\Alert;
 use Throwable;
+
+use function PHPUnit\Framework\isNull;
 
 class AppointmentController extends Controller
 {
@@ -255,11 +259,14 @@ class AppointmentController extends Controller
             $showList = true;
 
             // initial data values
-            $appointments = Appointment::with('patient', 'schedule.personnel','schedule.personnel.medicalservices', 'schedule.service', 'schedule.room', 'appointmentStatus', 'invoice', 'invoice.invoiceStatus')->get();
+            $appointments = Appointment::with('patient', 'schedule.personnel','schedule.personnel.medicalservices', 'schedule.service', 'schedule.room', 'appointmentStatus', 'invoice', 'invoice.invoiceStatus')
+            // ->where('estimated_service_time', '>', Carbon::now('Asia/Tehran'))
+            ->latest()->get();
             // foreach ($appointments as $app) {
-            //     dd($app->invoice->invoiceStatus);
+            //     dd($app);
             // }
 
+            // dd($appointments);
             return view('admin.appointments.appointments.registered-patients-list', [
                 'showList' => $showList,
                 'appointments' => $appointments,
@@ -286,7 +293,7 @@ class AppointmentController extends Controller
     public function patientsListStore(Request $request)
     {
         // validation
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'appointment_id' => ['required', 'exists:appointments,id'],
             'discount' => ['nullable', 'min:4']
         ], [
@@ -294,6 +301,16 @@ class AppointmentController extends Controller
             'appointment_id.exists' => 'تایم ویزیت انتخاب شده نامعتبر میباشد.',
             'discount.min' => 'کمترین مبلغ تخفیف حداقل باید 1000 تومان باشد. ',
         ]);
+
+        if ($validator->fails()) {
+            response()->json([
+                'message' => 'validation errors'
+            ], 422);
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with("discount_validation", $request['appointment_id']);
+        }
 
         // get data
         $appointment = Appointment::with('patient', 'schedule.personnel', 'schedule.personnel.medicalservices', 'schedule.service', 'schedule.room', 'appointmentStatus')->find($request['appointment_id']);
@@ -328,21 +345,21 @@ class AppointmentController extends Controller
         }
 
         try {
-            //TODO check date. if it is happening in past days redirect back with error alert
-            // if ($estimated_service_time < Carbon::now('Asia/Tehran')->toDateTimeString()) {
-            //     Alert::error('خطا!','امکان پذیرش بیمار در زمان گذشته وجود ندارد.');
+            //TODO prevent from issuance of invoice if resereved time is < now
+            if ($appointment->estimated_service_time < Carbon::now('Asia/Tehran')) {
+                Alert::error('خطا!','امکان صدور فاکتور برای تاریخ گذشته وجود ندارد.');
 
-            //     // JSON response
-            //     if (request()->expectsJson()) {
-            //         return response()->json([
-            //             'message' => 'امکان پذیرش بیمار در زمان گذشته وجود ندارد.',
-            //             'status' => 'error'
-            //         ], 500);
-            //     }
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز (صدور فاکتور در گذشته)',
+                        'status' => 'error'
+                    ], 500);
+                }
 
-            //     return back()->withInput($request->only('select_patient'));
-            // }
-
+                return back();
+            }
+return 'done';
             // TODO prevent from adding duplicated value
             // $duplication_exist = Appointment::where('estimated_service_time', $estimated_service_time)
             //                     ->where('patient_id', $patient->id)
@@ -388,6 +405,21 @@ class AppointmentController extends Controller
 
             //     return back()->withInput($request->only('select_patient'));
             // }
+
+            // prevent from cancelation if it was canceled previously
+            if (($appointment->appointmentStatus->status == AppointmentStatusEnum::CANCELLED->value) && (! empty($appointment->canceled_date))) {
+                Alert::error('خطا!',"امکان صدور فاکتور برای نوبت کنسل شده وجود ندارد!");
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
 
             // get service price
             foreach ($appointment->schedule->personnel->medicalservices as $service) {
@@ -465,7 +497,7 @@ class AppointmentController extends Controller
             // check if invoice has been published for this patient
             $invoice = $appointment->invoice;
             if (! empty($invoice)) {
-                Alert::error('خطا!','عملیات غیرممکن!');
+                Alert::error('خطا!','حذف نوبت ممکن نیست.');
 
                 // JSON response
                 if (request()->expectsJson()) {
@@ -480,7 +512,22 @@ class AppointmentController extends Controller
 
             // check date. if it is happening in past days redirect back with error alert
             if ($appointment->estimated_service_time < Carbon::now('Asia/Tehran')->toDateTimeString()) {
-                Alert::error('خطا!','عملیات غیرممکن!');
+                Alert::error('خطا!','حذف نوبت ممکن نیست.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
+
+            // prevent from cancelation if it was canceled previously
+            if (($appointment->appointmentStatus->status == AppointmentStatusEnum::CANCELLED->value) && (! empty($appointment->canceled_date))) {
+                Alert::error('خطا!',"امکان حذف نوبت کنسل شده وجود ندارد!");
 
                 // JSON response
                 if (request()->expectsJson()) {
@@ -526,11 +573,28 @@ class AppointmentController extends Controller
      */
     public function cancelAppointment(Request $request, Appointment $appointment)
     {
-        dd($request->all());
+        // validation
+        $validator = Validator::make($request->all(), [
+            'cancel_description' => ['required', 'min:5']
+        ], [
+            'cancel_description.required' => 'فیلد نمیتواند خالی باشد.',
+            'cancel_description.min' => 'حداقل 5 کاراکتر وارد نمایید.',
+        ]);
+
+        if ($validator->fails()) {
+            response()->json([
+                'message' => 'validation errors'
+            ], 422);
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with("cancel_validation", $appointment->id);
+        }
+
         try {
             // check date. if it is happening in past days redirect back with error alert
             if ($appointment->estimated_service_time < Carbon::now('Asia/Tehran')->toDateTimeString()) {
-                Alert::error('خطا!','عملیات غیرممکن!');
+                Alert::error('خطا!','کنسل کردن نوبت ممکن نیست.');
 
                 // JSON response
                 if (request()->expectsJson()) {
@@ -543,21 +607,41 @@ class AppointmentController extends Controller
                 return back();
             }
 
-            // cancel in appointments DB
+            // prevent from cancelation if it was canceled previously
+            if (($appointment->appointmentStatus->status == AppointmentStatusEnum::CANCELLED->value) && (! empty($appointment->canceled_date))) {
+                $canceled_date = jdate($appointment->canceled_date)->format('%d %B %Y');
+                $canceled_time = jdate($appointment->canceled_date)->format('H:i');
+                Alert::error('خطا!',"بیمار {$appointment->patient->full_name} قبلا در تاریخ $canceled_date در ساعت $canceled_time نوبت رزرو خود را کنسل کرده است!");
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
+
+            // insert cancelation details into appointments DB
             $appointment->update([
-                'appointment_status_id' => AppointmentsStatus::find(3)->id,
+                'appointment_status_id' => AppointmentsStatus::where('status', AppointmentStatusEnum::CANCELLED->value)->first()->id,
                 'canceled_user_id' => Auth::id(),
                 'canceled_date' => Carbon::now('Asia/Tehran')->toDateTimeString(),
+                'cancel_description' => $request['cancel_description'],
             ]);
+
+            // TODO عملیات عودت وجه و ثبت در دیتابیس در صورت پرداخت
 
             if (request()->expectsJson()) {
                 return response()->json([
-                    'message' => "نوبت رزرو شده با موفقیت حذف شد",
+                    'message' => "نوبت رزرو شده با موفقیت کنسل شد",
                     'status' => true
                 ], 200);
             }
 
-            Alert::success('عملیات موفق!','نوبت رزرو شده با موفقیت حذف شد.');
+            Alert::success('عملیات موفق!','نوبت رزرو شده با موفقیت کنسل شد.');
 
             return back();
         } catch (Throwable $th) {
@@ -581,6 +665,6 @@ class AppointmentController extends Controller
     */
     public function invoice(Request $request)
     {
-        dd($request->all());
+        dd($request->all(), 'fsdfsdf');
     }
 }
