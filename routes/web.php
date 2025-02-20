@@ -87,7 +87,9 @@ Route::prefix('appointments')->controller(AppointmentController::class)->group(f
     Route::delete('appointments/list/{appointment}', 'deleteAppointment')->name('appointments.patients.list.destory');
 
     // invoice
-    Route::post('appointments/list/{invoice}', 'invoice')->name('appointment.invoice');
+    Route::post('appointments/list/{invoice}', 'payments')->name('appointment.payments');
+    // print invoice
+    Route::get('appointments/list/print/{invoice}', 'printInvoice')->name('appointment.print');
 });
 
 require __DIR__.'/auth.php';

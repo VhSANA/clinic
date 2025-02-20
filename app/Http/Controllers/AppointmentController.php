@@ -7,14 +7,17 @@ use App\Models\Appointment;
 use App\Models\AppointmentsStatus;
 use App\Models\Calendar;
 use App\Models\Invoice;
+use App\Models\InvoiceDetails;
 use App\Models\InvoiceStatus;
 use App\Models\MedicalServices;
 use App\Models\Patient;
+use App\Models\Payment;
 use App\Models\Personnel;
 use App\Models\Room;
 use App\Models\Schedule;
 use App\Rules\TimeLimitValidation;
 use Carbon\Carbon;
+use Storage;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -259,17 +262,21 @@ class AppointmentController extends Controller
             $showList = true;
 
             // initial data values
-            $appointments = Appointment::with('patient', 'schedule.personnel','schedule.personnel.medicalservices', 'schedule.service', 'schedule.room', 'appointmentStatus', 'invoice', 'invoice.invoiceStatus')
+            $appointments = Appointment::with('patient', 'schedule.personnel','schedule.personnel.medicalservices', 'schedule.service', 'schedule.room', 'appointmentStatus', 'invoice', 'invoice.invoiceStatus', 'invoice.payment')
             // ->where('estimated_service_time', '>', Carbon::now('Asia/Tehran'))
             ->latest()->get();
+
+            $payments = Payment::all();
+            // ->where('estimated_service_time', '>', Carbon::now('Asia/Tehran'));
             // foreach ($appointments as $app) {
-            //     dd($app);
+            //     dd($app->invoice);
             // }
 
             // dd($appointments);
             return view('admin.appointments.appointments.registered-patients-list', [
                 'showList' => $showList,
                 'appointments' => $appointments,
+                'payments' => $payments,
             ]);
         } catch (Throwable $th) {
             throw $th;
@@ -359,52 +366,6 @@ class AppointmentController extends Controller
 
                 return back();
             }
-return 'done';
-            // TODO prevent from adding duplicated value
-            // $duplication_exist = Appointment::where('estimated_service_time', $estimated_service_time)
-            //                     ->where('patient_id', $patient->id)
-            //                     ->where('schedule_id', $schedule->id)
-            //                     ->exists();
-
-            // if ($duplication_exist) {
-            //     Alert::error('خطا!','مورد مشابه قبلا در سیستم ثبت شده است!');
-
-            //     // JSON response
-            //     if (request()->expectsJson()) {
-            //         return response()->json([
-            //             'message' => 'مورد مشابه قبلا در سیستم ثبت شده است!',
-            //             'status' => 'error'
-            //         ], 409);
-            //     }
-
-            //     return back();
-            // }
-
-            // TODO check, same patient cannot have another visit time except previous one is passed or paid
-            // $prevent_new_visit_if_exists = Appointment::where('patient_id', $patient->id)
-            //                             ->where('schedule_id', $schedule->id)
-            //                             ->where('appointment_status_id', 1)
-            //                             ->exists();
-
-            // if ($prevent_new_visit_if_exists) {
-            //     $registred_visit = Appointment::where('patient_id', $patient->id)
-            //                     ->where('schedule_id', $schedule->id)
-            //                     ->where('appointment_status_id', 1)
-            //                     ->first();
-            //     $registred_visit_time = Carbon::parse($registred_visit->estimated_service_time)->format('H:i');
-
-            //     Alert::error('خطا!', "برای $patient->full_name در ساعت $registred_visit_time نوبت ثبت شده است.");
-
-            //     // JSON response
-            //     if (request()->expectsJson()) {
-            //         return response()->json([
-            //             'message' => 'قبلا نوبت ثبت شده است',
-            //             'status' => 'error'
-            //         ], 500);
-            //     }
-
-            //     return back()->withInput($request->only('select_patient'));
-            // }
 
             // prevent from cancelation if it was canceled previously
             if (($appointment->appointmentStatus->status == AppointmentStatusEnum::CANCELLED->value) && (! empty($appointment->canceled_date))) {
@@ -437,7 +398,7 @@ return 'done';
             //TODO add cost column to insurance table and views and add values of it too  $service_price -= intval($appointment->patient->insurance->cost);
 
             // insert into to invoice and invoice_details tables
-            Invoice::create([
+            $new_invoice = Invoice::create([
                 'name' => $appointment->patient->name,
                 'family' => $appointment->patient->family,
                 'national_code' => $appointment->patient->national_code,
@@ -460,6 +421,18 @@ return 'done';
                 'is_foreigner' => $appointment->patient->is_foreigner,
                 'passport_code' => $appointment->patient->passport_code ?? null,
                 'payment_status_id' => InvoiceStatus::find(1)->id,
+            ]);
+
+            InvoiceDetails::create([
+                'medical_service_name' => $appointment->schedule->service->name,
+                'medical_service_price' => $total_service_price,
+                'medical_service_id' => $appointment->schedule->service->id,
+                'personnel_id' => $appointment->schedule->personnel->id,
+                'personnel_name' => $appointment->schedule->personnel->full_name,
+                'personnel_code' => $appointment->schedule->personnel->personnel_code,
+                'room_id' => $appointment->schedule->room->id,
+                'estimated_service_time' => $appointment->estimated_service_time,
+                'invoice_id' => $new_invoice->id,
             ]);
 
             if (request()->expectsJson()) {
@@ -659,12 +632,182 @@ return 'done';
             // return back();
         }
     }
+
     /**
-    * in this method we delete the whole row of appointment from DB.
-    * this method doesnt updates cancel columns of DB
+    * payment method which tracks transactions and adds to db
     */
-    public function invoice(Request $request)
+    public function payments(Request $request, Invoice $invoice)
     {
-        dd($request->all(), 'fsdfsdf');
+        // validation
+        $validator = Validator::make($request->all(), [
+            'invoice_id' => ['required', 'exists:bill_patient_invoice,id'],
+            "price" => ['required', 'min:4'],
+            "payment_method" => ['required', 'in:cash,card'],
+            'payment_description' => ['nullable', 'min:5'],
+        ], [
+            'invoice_id.required' => 'مقدار نامتعبر',
+            'invoice_id.exists' => 'فاکتور نامعتبر میباشد.',
+            "price.required" => 'وارد نمودن مبلغ پرداختی اجباری میباشد. (به تومان وارد شود).',
+            "price.min" => 'حداقل مبلغ پرداختی باید 1000 تومان باشد.',
+            "payment_method.required" => 'یک روش پرداختی انتخاب نمایید.',
+            "payment_method.in" => 'روش پرداختی انتخابی نامعتبر میباشد.',
+            'payment_description.min' => 'توضیحات تراکنش حداقل باید شامل 5 کاراکتر باشد.',
+        ]);
+
+        if ($validator->fails()) {
+            response()->json([
+                'message' => 'validation errors'
+            ], 422);
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with("payment_validation", $invoice->id);
+        }
+
+        // get data
+        $in_queue_appointment_status = AppointmentsStatus::where('status', AppointmentStatusEnum::IN_QUEUE->value)->first();
+
+        try {
+            // add validation for max payment
+            if ($request['price'] > $invoice->total_to_pay) {
+                Alert::error('خطا!','مبلغ پرداختی نمیتواند بیشتر از مبلغ قابل پرداخت باشد.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput()
+                    ->with("payment_validation", $invoice->id);
+            }
+
+            // prevent from payment if reservation < now
+            if ($invoice->estimated_service_time < Carbon::now('Asia/Tehran')) {
+                Alert::error('خطا در پرداخت!','نوبت رزرو شده منقضی شده است.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
+
+            // prevent from payment if reservation is canceld
+            if (($invoice->appointment->appointmentStatus->status == AppointmentStatusEnum::CANCELLED->value) && (! empty($invoice->appointment->canceled_date))) {
+                Alert::error('خطا در پرداخت!','نمیتوان نوبت کنسل شده را پرداخت کرد.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
+
+            // prevent if payment is completed
+            if ($invoice->payment_status_id == 2) {
+                Alert::error('خطا در پرداخت!',"صورتحساب بشماره {$invoice->invoice_number} بصورت کامل پرداخت شده است.");
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
+
+            $patient_exists = Invoice::whereHas('appointment.schedule', function ($query) use ($invoice) {
+                $query->where('personnel_id', $invoice->appointment->schedule->personnel->id)
+                      ->where('medical_service_id', $invoice->appointment->schedule->service->id)
+                      ->where('room_id', $invoice->appointment->schedule->room->id);
+            })
+            ->where('payment_status_id', 2)
+            ->whereHas('appointment', function ($query) {
+                $query->where('estimated_service_time', '>=', now());
+            })
+            ->max('line_index');
+
+            $newLineIndex = ($patient_exists !== null) ? $patient_exists + 1 : 1;
+
+        // insert into DBs
+            // bill_payment table
+            $payment = Payment::create([
+                'amount' => $request['price'],
+                'payment_type' => $request['payment_method'],
+                'description' => $request['payment_description'],
+                'invoice_id' => $invoice->id,
+                'user_name' => Auth::user()->full_name,
+                'user_id' => Auth::id(),
+            ]);
+
+            // latest amount to pay
+            $latest_payment = intval($invoice->paid_amount) + intval($payment->amount);
+
+            // bill_invoices table
+            $invoice->update([
+                'paid_amount' => $latest_payment,
+                'user_id' => Auth::id(),
+                'user_name' => Auth::user()->full_name,
+                'line_index' => $newLineIndex,
+                'payment_status_id' => ($invoice->total_to_pay == $latest_payment ? 2 : $invoice->payment_status_id),
+            ]);
+
+            // appointments table
+            $invoice->appointment->update([
+                'appointment_status_id' => ($invoice->total_to_pay == $latest_payment ? $in_queue_appointment_status->id : $invoice->appointment->appointment_status_id),
+                'user_id' => Auth::id()
+            ]);
+
+            if ($invoice->total_to_pay != $latest_payment) {
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => "عملیات پرداخت موفقیت آمیز",
+                        'status' => true
+                    ], 200);
+                }
+
+                Alert::success('عملیات موفق!','پرداخت موفق.');
+
+                return back();
+            }
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => "عملیات پرداخت موفقیت آمیز",
+                    'status' => true
+                ], 200);
+            }
+
+            Alert::success('عملیات موفق!',"صورتحساب بشماره {$invoice->invoice_number} بصورت کامل پرداخت شد و بیمار در صف {$invoice->line_index} قرار گرفته است.");
+
+            return back();
+        } catch (Throwable $th) {
+            throw $th;
+        }
+    }
+
+    /**
+     * method for printing the invoice
+     */
+    public function printInvoice(Request $request, Invoice $invoice)
+    {
+        return view('print', [
+            'invoice' => $invoice
+        ]);
     }
 }

@@ -50,4 +50,13 @@ class Invoice extends Model
     {
         return $this->belongsTo(InvoiceStatus::class, 'payment_status_id');
     }
+
+    public function invoiceDetails()
+    {
+        return $this->hasOne(InvoiceDetails::class);
+    }
+    public function payment()
+    {
+        return $this->hasMany(Payment::class);
+    }
 }

@@ -14,12 +14,11 @@ return new class extends Migration
         Schema::create('bill_payments', function (Blueprint $table) {
             $table->id();
             $table->string('amount');
-            $table->string('payment_type')->default(0);
+            $table->enum('payment_type', ['cash', 'card'])->default('cash');
             $table->text('description')->nullable();
-            $table->string('invoice_id');
+            $table->foreignId('invoice_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->string('user_name');
             $table->foreignId('user_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
-            $table->text('extra')->nullable();
             $table->timestamps();
         });
 

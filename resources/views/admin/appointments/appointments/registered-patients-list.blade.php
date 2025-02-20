@@ -52,8 +52,6 @@
                                             <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                                                 <td colspan="8" class="flex justify-center items-center px-6 py-4">لطفا کمی صبر کنید ... </td>
                                             </tr>
-                                            @foreach ($appointments as $appointment)
-                                            @endforeach
                                         @else
                                             <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                                                 <td colspan="8" class="flex justify-center items-center px-6 py-4">کد ملی یا نام بیمار راجستجو کنید <x-icons.search /></td>
@@ -79,6 +77,7 @@
             const showPaymentAndInvoiceModal = @json(session('show_payment_and_invoice_modal'));
             const discountValidationModal = @json(session('discount_validation'));
             const cancelValidationModal = @json(session('cancel_validation'));
+            const paymentValidationModal = @json(session('payment_validation'));
 
             // value of inputs
             const search = document.getElementById('table-search');
@@ -88,7 +87,7 @@
 
             // Pagination variables
             const pagination = document.getElementById('pagination');
-            const rowsPerPage = 3;
+            const rowsPerPage = 5;
             let currentPage = 1;
 
         // Pagination
@@ -119,7 +118,7 @@
 
                         // format registered visit time to Persian calendar
                         const appointmentCreatedTime = new Date(appointment.created_at);
-                        const appointmentTime = `${appointmentCreatedTime.getHours()}:${appointmentCreatedTime.getMinutes()}`;
+                        const appointmentTime = `${appointmentCreatedTime.getHours()}:${padMinutes(appointmentCreatedTime.getMinutes())}`;
                         const appointmentDate = convertToJalali(`${appointmentCreatedTime.getFullYear()}-${appointmentCreatedTime.getMonth()}-${appointmentCreatedTime.getDate() + 1}`);
                         const appointmentDayOfWeek = getPersianDayOfWeek(`${appointmentCreatedTime.getFullYear()}-${appointmentCreatedTime.getMonth()}-${appointmentCreatedTime.getDate() + 3}`);
                         const appointmentMonthOfYear = getPersianMonthsOfYear(`${appointmentCreatedTime.getFullYear()}-${appointmentCreatedTime.getMonth() + 1}-${appointmentCreatedTime.getDate()}`);
@@ -151,7 +150,12 @@
                                     <p>روز: <strong>${persianDayOfWeek}، ${visitDate.jd} ${monthOfYear} ${visitDate.jy}</strong></p>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 ${appointment.appointment_status.id == 3 ? 'text-red-600 font-bold' : 'font-bold'}">${appointment.appointment_status.status}</td>
+                            <td class="px-6 py-4 ${appointment.appointment_status.id == 3 ? 'text-red-600 font-bold' : 'font-bold'}">
+                                <div class="flex flex-col">
+                                    <p>${appointment.appointment_status.status}</p>
+                                    <p class="${appointment.invoice?.line_index > 0 ? '' : 'hidden'}">نوبت: ${appointment.invoice?.line_index}</p>
+                                </div>
+                            </td>
                             <td class="px-6 py-4 text-center flex items-center justify-center">
                                 <button id="open-modal-btn-${appointment.id}" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="${appointment.appointment_status.id == 3 ? 'text-blue-600 hover:text-blue-800 opacity-40 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'} transition" type="button">
                                     <x-icons.work />
@@ -179,6 +183,9 @@
                                                     <div class="hidden" id="cancelation-modal-${appointment.id}" />
                                                         ${cancelingReservation(appointment)}
                                                     </div>
+                                                    <div class="hidden" id="payment-modal-${appointment.id}" />
+
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -197,6 +204,9 @@
                         const cancelReservation = document.getElementById(`cancel-reservation-modal-${identifier}`);
                         const invoiceDetails = document.getElementById(`invoice-details-${identifier}`);
                         const cancelationModal = document.getElementById(`cancelation-modal-${identifier}`);
+                        const paymentModal = document.getElementById(`payment-modal-${identifier}`);
+                        const paymentTogglerBtn = document.getElementById(`toggle-payment-${identifier}`);
+                        const cancaelReservationBtn = document.getElementById(`cancel-reservation-btn-${identifier}`);
 
                         // open modal if show_payment_and_invoice_modal session is available
                         if (parseInt(showPaymentAndInvoiceModal) == identifier) {
@@ -204,19 +214,28 @@
                             modal.classList.add('flex');
                         }
 
-                        // validation error modal
+                        // validation error modal for discount input
                         if (parseInt(discountValidationModal) == identifier) {
                             modal.classList.remove('hidden');
                             modal.classList.add('flex');
                         }
 
-                        // validation error modal
+                        // validation error modal for caneling reservation input
                         if (parseInt(cancelValidationModal) == identifier) {
                             modal.classList.remove('hidden');
                             modal.classList.add('flex');
 
                             invoiceDetails.classList.add('hidden');
                             cancelationModal.classList.remove('hidden');
+                        }
+
+                        // validation error modal for payment inputs
+                        if (parseInt(paymentValidationModal) == parseInt(appointment.invoice?.id)) {
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+
+                            invoiceDetails.classList.add('hidden');
+                            paymentModal.classList.remove('hidden');
                         }
 
                         // Open Modal
@@ -241,11 +260,25 @@
                         cancelReservation.addEventListener('click', function() {
                             invoiceDetails.classList.add('hidden');
                             cancelationModal.classList.remove('hidden');
+                        });
+                        cancaelReservationBtn?.addEventListener('click', function () {
+                            invoiceDetails.classList.remove('hidden');
+                            cancelationModal.classList.add('hidden');
+                        });
 
-                            const cancaelReservationBtn = document.getElementById(`cancel-reservation-btn-${identifier}`);
-                            cancaelReservationBtn.addEventListener('click', function () {
+                        // toggle payment
+                        paymentTogglerBtn?.addEventListener('click', function () {
+                            invoiceDetails.classList.add('hidden');
+                            paymentModal.classList.remove('hidden');
+
+                            // generate payment modal details
+                            paymentModalHandler(appointment,paymentModal);
+
+                            // go back button
+                            const backToInvoiceModalBtn = document.getElementById(`back-to-invoice-details-${identifier}`);
+                            backToInvoiceModalBtn?.addEventListener('click', function () {
                                 invoiceDetails.classList.remove('hidden');
-                                cancelationModal.classList.add('hidden');
+                                paymentModal.classList.add('hidden');
                             });
                         });
                     });
@@ -416,23 +449,31 @@
                     }
                 }
             }
+
             // Function to convert Gregorian date to Jalali date
             function convertToJalali(gregorianDate) {
                 const [year, month, day] = gregorianDate.split('-').map(Number);
                 const jalaaliDate = jalaali.toJalaali(year, month, day);
                 return jalaaliDate;
             }
+
             // Function to get the Persian day of the week
             function getPersianDayOfWeek(gregorianDate) {
                 const date = new Date(gregorianDate);
                 const daysOfWeek = ['یک شنبه', 'دو شنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه', 'شنبه'];
                 return daysOfWeek[date.getDay()];
             }
+
             // Function to get the Persian month
             function getPersianMonthsOfYear(gregorianDate) {
                 const date = new Date(gregorianDate);
                 const monthsOfYear = ['دی', 'بهمن', 'اسفند', 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر'];
                 return monthsOfYear[date.getMonth()];
+            }
+
+            // Function to pad minutes with leading zero if necessary
+            function padMinutes(minutes) {
+                return minutes < 10 ? '0' + minutes : minutes;
             }
 
             // function to create pagination
@@ -468,7 +509,7 @@
                 return `<form class="w-full" action="{{ route('appointments.patients.list.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="appointment_id" value="${appointment.id}" />
-                    <div class="flex justify-between w-full gap-4">
+                    <div class="flex justify-between w-full gap-4 mb-5">
                         <div class="flex flex-col w-full justify-start">
                             <div class="mt-4">
                                 <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
@@ -527,9 +568,10 @@
                                 <input type="text" disabled value="خدمت ${appointment.schedule.service.name} به قیمت ${formatPrice(serviceWithPrice.pivot.service_price)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
                             </div>
                             <div class="mt-12">
-                                <x-app.button.add-btn >
+                                <button type="submit" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full bg-green-600 dark:bg-green-800 text-white dark:text-white gap-2 antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between transition">
                                     صدور فاکتور
-                                </x-app.add-btn>
+                                    <x-icons.invoice />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -553,10 +595,7 @@
 
             // payment details modal
             function invoiceDetailsHandler(appointment, appointmentDate, appointmentTime, appointmentDayOfWeek, appointmentMonthOfYear, serviceWithPrice) {
-                return `<form class="w-full" action="{{ route('appointment.invoice', '') }}/${appointment.invoice.id}" method="POST">
-                    @csrf
-                    <input type="hidden" name="invoice_id" value="${appointment.invoice.id}" />
-                    <div class="flex justify-between w-full gap-4">
+            return `<div class="flex justify-between w-full gap-4 mb-5">
                         <div class="flex flex-col w-full justify-start">
                             <div class="mt-4">
                                 <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
@@ -631,7 +670,7 @@
                             </div>
 
                             <div class="mt-12">
-                                <button type="submit" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
+                                <button type="button" id="toggle-payment-${appointment.id}"  class="rounded-full  bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold hover:bg-green-800 dark:hover:bg-green-900 px-4 py-2 flex items-center justify-between gap-3 transition">
                                     پرداخت فاکتور <x-icons.cash />
                                 </button>
                             </div>
@@ -639,13 +678,9 @@
                     </div>
                 </form>
                 <div class="absolute left-0 bottom-0 flex justify-end gap-4">
-                    <form action="{{ route('appointments.patients.list.store') }}/${appointment.id}" method="POST">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="rounded-full ${appointment.appointment_status.id == 3 ? 'disabled' : ''} bg-cyan-600 dark:bg-cyan-800 text-white dark:text-white antialiased font-bold hover:bg-cyan-800 gap-2 dark:hover:bg-cyan-900 px-4 py-2 flex items-center justify-between transition">
-                         چاپ فاکتور <x-icons.print />
-                        </button>
-                    </form>
+                    <a href="{{ route('appointment.print', '') }}/${appointment.invoice?.id}" target="_blank" class="rounded-full ${appointment.appointment_status.id == 3 ? 'disabled' : ''} bg-cyan-600 dark:bg-cyan-800 text-white dark:text-white antialiased font-bold hover:bg-cyan-800 gap-2 dark:hover:bg-cyan-900 px-4 py-2 flex items-center justify-between transition">
+                        چاپ فاکتور <x-icons.print />
+                    </a>
                     <button type="submit" id="cancel-reservation-modal-${appointment.id}" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 gap-2 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
                         کنسل کردن <x-cancel-icon />
                     </button>
@@ -690,6 +725,202 @@
                     `;
             }
 
+            // payment modal
+            function paymentModalHandler(appointment, paymentModal) {
+                const transactionTableId = `transaction-${appointment.invoice.id}`;
+                const mustPay = parseInt(appointment.invoice.total_to_pay) - parseInt(appointment.invoice.paid_amount);
+                const disabledOrNot = appointment.invoice.total_to_pay == appointment.invoice.paid_amount;
+
+                paymentModal.innerHTML = `<form class="w-full mb-5" action="{{ route('appointment.payments', '') }}/${appointment.invoice.id}" method="POST">
+                    @csrf
+                    <input type="hidden" name="invoice_id" value="${appointment.invoice.id}" />
+                    <div class="flex flex-col ">
+                        <div class="flex justify-between w-full gap-4">
+                            <div class="flex flex-col w-full justify-start">
+                                <div class="mt-4">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        نام مراجعه کننده
+                                    </label>
+                                    <input type="text" disabled value="${appointment.invoice.name} ${appointment.invoice.family}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+
+                                <div class="flex justify-between gap-2">
+                                    <div class="mt-4 w-full">
+                                        <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                            کدملی مراجعه کننده
+                                        </label>
+                                        <input type="text" disabled value="${ appointment.invoice.is_foreigner == true ? appointment.invoice.passport_code : appointment.invoice.national_code }" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                    </div>
+
+                                    <div class="mt-4 w-full">
+                                        <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                            موبایل مراجعه کننده
+                                        </label>
+                                        <input type="text" disabled value="${appointment.invoice.patient_mobile}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        پرسنل ارائه دهنده خدمت و خدمت ارائه شده
+                                    </label>
+                                    <input type="text" disabled value="${appointment.schedule.personnel.full_name} - ${appointment.schedule.service.name}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+
+                            </div>
+                            <div class="flex flex-col w-full justify-start">
+                                <div class="mt-4">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        وضعیت فاکتور
+                                    </label>
+                                    <input type="text" disabled value="${appointment.invoice.invoice_status.status}" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+
+                                <div class="mt-4">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        مبلع کلی قابل پرداخت
+                                    </label>
+                                    <input type="text" disabled value="${formatPrice(appointment.invoice.total_to_pay)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+
+                                <div class="mt-4">
+                                    <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        مبلغ پرداخت شده
+                                    </label>
+                                    <input type="text" disabled value="${formatPrice(appointment.invoice.paid_amount)} تومان" class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" >
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="flex justify-between gap-4">
+                                <div class="mt-4 flex flex-col items-start w-full">
+                                    <div class="w-full">
+                                        <label class="block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                            مبلغ پرداختی*
+                                        </label>
+                                        <input type="number" min="0" ${disabledOrNot ? 'disabled' : ''} name="price" placeholder="مقدار را به تومان وارد نمایید." class="w-full mt-2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm ${disabledOrNot ? 'cursor-not-allowed opacity-40' : ''}" value="${mustPay}">
+                                    </div>
+                                    @error('price')
+                                        <p class="text-sm text-red-600 dark:text-red-400 space-y-1 mt-1">
+                                            {{ $message }}
+                                        </p>
+                                    @enderror
+                                </div>
+                                <div class="flex flex-col w-full items-center justify-center">
+                                    <div class="flex items-center justify-center w-full gap-10">
+                                        <div class="flex items-center mt-8">
+                                            <input id="cash" ${disabledOrNot ? '' : 'checked'} ${disabledOrNot ? 'disabled' : ''} type="radio" value="cash" name="payment_method" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 ${disabledOrNot ? 'cursor-not-allowed opacity-40' : ''}">
+                                            <label for="cash" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300 flex justify-between gap-2 ${disabledOrNot ? 'cursor-not-allowed opacity-40' : ''}">پرداخت نقدی <x-icons.cash /></label>
+                                        </div>
+                                        <div class="flex items-center mt-8">
+                                            <input id="card" type="radio" ${disabledOrNot ? 'disabled' : ''} value="card" name="payment_method" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 ${disabledOrNot ? 'cursor-not-allowed opacity-40' : ''}">
+                                            <label for="card" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300 flex justify-between gap-2 ${disabledOrNot ? 'cursor-not-allowed opacity-40' : ''}">پرداخت کارتی <x-icons.card/></label>
+                                        </div>
+                                    </div>
+                                    @error('payment_method')
+                                        <p class="text-sm text-red-600 dark:text-red-400 space-y-1 mt-1">
+                                            {{ $message }}
+                                        </p>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="mt-4 flex flex-col items-start">
+                                <div class="w-full">
+                                    <label class="mb-2 block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                        توضیحات مربوط به پرداخت
+                                    </label>
+                                    <textarea name="payment_description"  ${disabledOrNot ? 'disabled' : ''} rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 ${disabledOrNot ? 'cursor-not-allowed opacity-40' : ''}" placeholder="توضیحات مربوط به عملیات پرداخت. (میتواند خالی باشد)">{{ old('payment_description') }}</textarea>
+                                </div>
+                                @error('payment_description')
+                                    <p class="text-sm text-red-600 dark:text-red-400 space-y-1 mt-1">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
+                            </div>
+                            <div class="w-full mt-4 mb-16">
+                                <label class="mb-2 block font-medium text-start text-sm text-gray-700 dark:text-gray-300" >
+                                    تراکنش های پیشین
+                                </label>
+                                <table class="w-full text-sm text-left rtl:text-center text-gray-800 dark:text-gray-400 rounded-lg overflow-hidden">
+                                    <thead class="text-xs text-white uppercase bg-gray-800 dark:bg-gray-200 dark:text-gray-400 rounded-t-lg">
+                                        <tr class="rounded-t-lg border-b border-gray-300">
+                                            <th scope="col" class="px-6 py-3 border-r border-gray-300">نوع پرداخت</th>
+                                            <th scope="col" class="px-6 py-3 border-r border-gray-300">مبلغ پرداختی</th>
+                                            <th scope="col" class="px-6 py-3 border-r border-gray-300">توضیحات</th>
+                                            <th scope="col" class="px-6 py-3 border-r border-gray-300">کاربر ثبت کننده پرداخت</th>
+                                            <th scope="col" class="px-6 py-3 border-r border-gray-300">زمان پرداخت</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="${transactionTableId}">
+                                        @if (true)
+                                            <tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
+                                                <td colspan="8" class="px-6 py-4">
+                                                    لطفا کمی صبر کنید ...
+                                                </td>
+                                            </tr>
+                                        @else
+                                            <tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
+                                                <td colspan="8" class="px-6 py-4">
+                                                    تراکنشی یافت نشد
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-12 absolute left-16 bottom-0">
+                                <button type="submit"  ${disabledOrNot ? 'disabled' : ''} class="rounded-full bg-green-600 dark:bg-green-800 text-white dark:text-white antialiased font-bold px-4 py-2 flex items-center justify-between gap-3 transition ${disabledOrNot ? 'cursor-not-allowed opacity-40' : 'hover:bg-green-800'}">
+                                    پرداخت <x-icons.cash />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="absolute left-0 bottom-0 flex justify-end">
+                    <button type="button" id="back-to-invoice-details-${appointment.id}" class="rounded-full  bg-gray-600 dark:bg-gray-800 text-white dark:text-white antialiased font-bold hover:bg-gray-800 dark:hover:bg-gray-900 px-4 py-2.5 flex items-center justify-between transition">
+                        لغو
+                    </button>
+                </div>`;
+
+                // generate every transactions row
+                const transactionsTable = document.getElementById(transactionTableId);
+
+                if (transactionsTable) {
+                    transactionsTable.innerHTML = '';
+                }
+
+                appointment.invoice.payment.forEach(payment => {
+                    // format registered visit time to Persian calendar
+                    const paymentCreatedTime = new Date(payment.created_at);
+                    const paymentTime = `${paymentCreatedTime.getHours()}:${padMinutes(paymentCreatedTime.getMinutes())}`;
+                    const paymentDate = convertToJalali(`${paymentCreatedTime.getFullYear()}-${paymentCreatedTime.getMonth()}-${paymentCreatedTime.getDate() + 1}`);
+                    const paymentDayOfWeek = getPersianDayOfWeek(`${paymentCreatedTime.getFullYear()}-${paymentCreatedTime.getMonth()}-${paymentCreatedTime.getDate() + 3}`);
+                    const paymentMonthOfYear = getPersianMonthsOfYear(`${paymentCreatedTime.getFullYear()}-${paymentCreatedTime.getMonth() + 1}-${paymentCreatedTime.getDate()}`);
+
+                    if (payment.invoice_id == appointment.invoice.id) {
+                        const row = document.createElement('tr');
+                        row.classList.add('bg-white', 'border-b', 'dark:bg-gray-800', 'dark:border-gray-700');
+                        row.innerHTML = `
+                            <td class="px-6 py-4">
+                                ${payment.payment_type == 'cash' ? 'نقدی' : 'کارتی'}
+                            </td>
+                            <td class="px-6 py-4">
+                                ${formatPrice(payment.amount)} تومان
+                            </td>
+                            <td class="px-6 py-4">
+                                ${payment.description != null ? payment.description : '-'}
+                            </td>
+                            <td class="px-6 py-4">
+                                ${payment.user_name}
+                            </td>
+                            <td class="px-6 py-4">
+                                ${paymentDayOfWeek}، ${paymentDate.jd} ${paymentMonthOfYear} ${paymentDate.jy} ساعت ${paymentTime}
+                            </td>`;
+
+                        transactionsTable?.appendChild(row);
+                    }
+                });
+            };
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js"></script>
