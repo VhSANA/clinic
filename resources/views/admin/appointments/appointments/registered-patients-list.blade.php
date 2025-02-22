@@ -466,9 +466,10 @@
 
             // Function to get the Persian month
             function getPersianMonthsOfYear(gregorianDate) {
-                const date = new Date(gregorianDate);
-                const monthsOfYear = ['دی', 'بهمن', 'اسفند', 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر'];
-                return monthsOfYear[date.getMonth()];
+                const [year, month, day] = gregorianDate.split('-').map(Number);
+                const jalaaliDate = jalaali.toJalaali(year, month, day); // month + 1 because jalaali.toJalaali expects 1-based month
+                const monthsOfYear = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+                return monthsOfYear[jalaaliDate.jm - 1]; // jm is 1-based, so subtract 1 to get the correct index
             }
 
             // Function to pad minutes with leading zero if necessary
@@ -678,7 +679,7 @@
                     </div>
                 </form>
                 <div class="absolute left-0 bottom-0 flex justify-end gap-4">
-                    <a href="{{ route('appointment.print', '') }}/${appointment.invoice?.id}" target="_blank" class="rounded-full ${appointment.appointment_status.id == 3 ? 'disabled' : ''} bg-cyan-600 dark:bg-cyan-800 text-white dark:text-white antialiased font-bold hover:bg-cyan-800 gap-2 dark:hover:bg-cyan-900 px-4 py-2 flex items-center justify-between transition">
+                    <a href="{{ route('appointment.print', '') }}/${appointment.id}" target="_blank" class="rounded-full ${appointment.appointment_status.id == 3 ? 'disabled' : ''} bg-cyan-600 dark:bg-cyan-800 text-white dark:text-white antialiased font-bold hover:bg-cyan-800 gap-2 dark:hover:bg-cyan-900 px-4 py-2 flex items-center justify-between transition">
                         چاپ فاکتور <x-icons.print />
                     </a>
                     <button type="submit" id="cancel-reservation-modal-${appointment.id}" ${appointment.appointment_status.id == 3 ? 'disabled' : ''} class="rounded-full bg-yellow-400 dark:bg-yellow-700 text-white dark:text-white antialiased font-bold hover:bg-yellow-600 gap-2 dark:hover:bg-yellow-900 px-4 py-2 flex items-center justify-between transition">
@@ -852,19 +853,11 @@
                                         </tr>
                                     </thead>
                                     <tbody id="${transactionTableId}">
-                                        @if (true)
                                             <tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
                                                 <td colspan="8" class="px-6 py-4">
-                                                    لطفا کمی صبر کنید ...
+                                                    ${appointment.invoice.payment.length == 0 ? 'تراکنشی یافت نشد' : 'لطفا کمی صبر کنید ...'}
                                                 </td>
                                             </tr>
-                                        @else
-                                            <tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
-                                                <td colspan="8" class="px-6 py-4">
-                                                    تراکنشی یافت نشد
-                                                </td>
-                                            </tr>
-                                        @endif
                                     </tbody>
                                 </table>
                             </div>
@@ -885,7 +878,8 @@
                 // generate every transactions row
                 const transactionsTable = document.getElementById(transactionTableId);
 
-                if (transactionsTable) {
+
+                if (transactionsTable && (appointment.invoice.payment.length != 0)) {
                     transactionsTable.innerHTML = '';
                 }
 

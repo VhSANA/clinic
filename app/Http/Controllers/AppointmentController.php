@@ -190,13 +190,12 @@ class AppointmentController extends Controller
             // check, same patient cannot have another visit time except previous one is passed or paid
             $prevent_new_visit_if_exists = Appointment::where('patient_id', $patient->id)
                                         ->where('schedule_id', $schedule->id)
-                                        ->where('appointment_status_id', 1)
+                                        ->whereNot('appointment_status_id', 5)
                                         ->exists();
 
             if ($prevent_new_visit_if_exists) {
                 $registred_visit = Appointment::where('patient_id', $patient->id)
                                 ->where('schedule_id', $schedule->id)
-                                ->where('appointment_status_id', 1)
                                 ->first();
                 $registred_visit_time = Carbon::parse($registred_visit->estimated_service_time)->format('H:i');
 
@@ -263,20 +262,13 @@ class AppointmentController extends Controller
 
             // initial data values
             $appointments = Appointment::with('patient', 'schedule.personnel','schedule.personnel.medicalservices', 'schedule.service', 'schedule.room', 'appointmentStatus', 'invoice', 'invoice.invoiceStatus', 'invoice.payment')
-            // ->where('estimated_service_time', '>', Carbon::now('Asia/Tehran'))
-            ->latest()->get();
-
-            $payments = Payment::all();
-            // ->where('estimated_service_time', '>', Carbon::now('Asia/Tehran'));
-            // foreach ($appointments as $app) {
-            //     dd($app->invoice);
-            // }
+            ->where('estimated_service_time', '>', Carbon::now('Asia/Tehran'))
+            ->oldest('estimated_service_time')->get();
 
             // dd($appointments);
             return view('admin.appointments.appointments.registered-patients-list', [
                 'showList' => $showList,
                 'appointments' => $appointments,
-                'payments' => $payments,
             ]);
         } catch (Throwable $th) {
             throw $th;
@@ -731,19 +723,6 @@ class AppointmentController extends Controller
                 return back();
             }
 
-            $patient_exists = Invoice::whereHas('appointment.schedule', function ($query) use ($invoice) {
-                $query->where('personnel_id', $invoice->appointment->schedule->personnel->id)
-                      ->where('medical_service_id', $invoice->appointment->schedule->service->id)
-                      ->where('room_id', $invoice->appointment->schedule->room->id);
-            })
-            ->where('payment_status_id', 2)
-            ->whereHas('appointment', function ($query) {
-                $query->where('estimated_service_time', '>=', now());
-            })
-            ->max('line_index');
-
-            $newLineIndex = ($patient_exists !== null) ? $patient_exists + 1 : 1;
-
         // insert into DBs
             // bill_payment table
             $payment = Payment::create([
@@ -763,9 +742,27 @@ class AppointmentController extends Controller
                 'paid_amount' => $latest_payment,
                 'user_id' => Auth::id(),
                 'user_name' => Auth::user()->full_name,
-                'line_index' => $newLineIndex,
                 'payment_status_id' => ($invoice->total_to_pay == $latest_payment ? 2 : $invoice->payment_status_id),
             ]);
+
+            $patient_exists = Invoice::whereHas('appointment.schedule', function ($query) use ($invoice) {
+                $query->where('personnel_id', $invoice->appointment->schedule->personnel->id)
+                      ->where('medical_service_id', $invoice->appointment->schedule->service->id)
+                      ->where('room_id', $invoice->appointment->schedule->room->id);
+            })
+            ->where('payment_status_id', 2)
+            ->whereDate('estimated_service_time', Carbon::parse($invoice->estimated_service_time)->toDateString())
+            ->max('line_index');
+
+            if ($invoice->payment_status_id == 2) {
+                $newLineIndex = ($patient_exists != null) ? $patient_exists + 1 : 1;
+
+                // updae invoice line_index
+                $invoice->update([
+                    'line_index' => $newLineIndex,
+                ]);
+            }
+
 
             // appointments table
             $invoice->appointment->update([
@@ -804,8 +801,10 @@ class AppointmentController extends Controller
     /**
      * method for printing the invoice
      */
-    public function printInvoice(Request $request, Invoice $invoice)
+    public function printInvoice(Request $request, Appointment $appointment)
     {
+        $invoice = $appointment->invoice;
+
         return view('print', [
             'invoice' => $invoice
         ]);

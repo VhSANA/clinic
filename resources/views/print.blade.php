@@ -125,17 +125,7 @@
         }
         tr:last-child td {
             border-bottom: none;
-        }
-        .payment-details {
-            display: flex;
-            justify-content: space-between;
-            padding: 0 10px;
-        }
-        .payment-details p {
-            font-weight: bold
-        }
-        .payment-details span {
-            font-weight: normal
+            background-color: rgb(239, 239, 239);
         }
         .buttons {
             display: flex;
@@ -201,8 +191,9 @@
             }
             tr:last-child td {
                 border-bottom: none !important;
+                background-color: rgb(239, 239, 239);
             }
-            
+
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -250,21 +241,32 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($invoice->payment as $index => $value)
-                <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $value->invoice->appointment->schedule->service->name }}</td>
-                    <td>{{ $value->invoice->appointment->schedule->personnel->full_name }}</td>
-                    <td>{{ number_format($value->amount) }} تومان</td>
-                </tr>
-            @endforeach
+            <tr>
+                <td> 1 </td>
+                <td>{{ $invoice->appointment->schedule->service->name }}</td>
+                <td>{{ $invoice->appointment->schedule->personnel->full_name }}</td>
+                <td>{{ number_format($invoice->total_to_pay) }} تومان</td>
+            </tr>
+            <tr>
+                <td> 2 </td>
+                <td >تخفیف</td>
+                <td ></td>
+                <td >{{ $invoice->discount != 0 ? number_format($invoice->discount) . ' تومان' : '-' }}</td>
+            </tr>
+            <tr>
+                <td> 3 </td>
+                <td >بیمه</td>
+                <td ></td>
+                <td >{{ $invoice->insurance_cost != 0 ? number_format($invoice->insurance_cost) . ' تومان' : '-' }}</td>
+            </tr>
+            <tr>
+                <td> 4 </td>
+                <td >مبلغ قابل پرداخت</td>
+                <td ></td>
+                <td >{{ number_format($invoice->paid_amount) }} تومان</td>
+            </tr>
         </tbody>
     </table>
-
-    <div class="payment-details">
-        <p>دریافتی: <span>{{ number_format($invoice->paid_amount) }} تومان</span></p>
-        <p>تخفیف: <span>{{ $invoice->discount != 0 ? number_format($invoice->discount) . ' تومان' : '-' }}</span></p>
-    </div>
 
     <div class="buttons">
         <button id="print" onclick="window.print()">چاپ</button>

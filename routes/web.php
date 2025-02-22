@@ -89,7 +89,7 @@ Route::prefix('appointments')->controller(AppointmentController::class)->group(f
     // invoice
     Route::post('appointments/list/{invoice}', 'payments')->name('appointment.payments');
     // print invoice
-    Route::get('appointments/list/print/{invoice}', 'printInvoice')->name('appointment.print');
+    Route::get('appointments/list/print/{appointment}', 'printInvoice')->name('appointment.print');
 });
 
 require __DIR__.'/auth.php';
