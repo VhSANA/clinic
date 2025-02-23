@@ -6,6 +6,7 @@ use App\Models\Calendar;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Morilog\Jalali\Jalalian;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class CalendarController extends Controller
 {
@@ -14,50 +15,11 @@ class CalendarController extends Controller
      */
     public function index(Request $request)
     {
-        // TODO add validation if admin tries to delete the day as work day, bans admin from that action if there was appointments added to that day
         // get queries from DB
         $calendars = Calendar::query()->get();
 
-    // // create Persian calender view
-        // Check if a specific date is provided
-        if ($request->has('gotodate')) {
-            $goToDate = Jalalian::forge($request->input('gotodate'));
-        } else {
-            $goToDate = Jalalian::now();
-        }
-
-        // Create Persian calendar view
-        $currentDate = $goToDate;
-
-        // Retrieve and validate year and month
-        $year = $request->input('year', $currentDate->getYear());
-        $month = $request->input('month', $currentDate->getMonth());
-
-        $currentDate = new Jalalian($year, $month, 1);
-
-        $daysInMonth = $currentDate->getMonthDays();
-        $firstDayOfMonth = $currentDate->getDayOfWeek();
-
-        $monthName = $currentDate->format('%B %Y');
-
-        // Calculate the last days of the previous month
-        $previousMonth = $currentDate->subMonths(1);
-        $daysInPreviousMonth = $previousMonth->getMonthDays();
-        $lastDaysOfPreviousMonth = $daysInPreviousMonth - $firstDayOfMonth;
-
-        // Calculate the first days of the next month
-        $nextMonth = $currentDate->addMonths(1);
-        $remainingDays = (7 - (($daysInMonth + $firstDayOfMonth) % 7)) % 7;
-
         return view('admin.calender.all-calender', [
             'calendars' => $calendars,
-            'currentDate' => $currentDate,
-            'daysInMonth' => $daysInMonth,
-            'firstDayOfMonth' => $firstDayOfMonth,
-            'monthName' => $monthName,
-            'lastDaysOfPreviousMonth' => $lastDaysOfPreviousMonth,
-            'daysInPreviousMonth' => $daysInPreviousMonth,
-            'remainingDays' => $remainingDays,
         ]);
     }
 
@@ -67,22 +29,35 @@ class CalendarController extends Controller
     public function store(Request $request)
     {
         if ($request['add_work_date'] == '') {
-            return redirectWithJson(false, 'تقویم کاری خالی میباشد.', [], 400, 'calendar.index');
-        }
+            Alert::error('خطا!', 'تقویم نمیتواند خالی باشد.');
 
-        // get Solar Hijri from input and seprate into year, month and day and convert it to Carbon
-        $date = convertExplodedDate($request['add_work_date']);
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'تقویم کاری خالی میباشد.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return back();
+        }
 
         // save to DB
         Calendar::create([
             'is_holiday' => false,
-            'date' => $date
+            'date' => "{$request['add_work_date']} 00:00:00"
         ]);
 
-        // json respone and redirect
-        response()->json([
-            'message' => 'روز کاری با موفقیت اضافه شد'
-        ]);
+        Alert::success('موفق!', 'روزکاری با موفقیت به تقویم افزوده شد.');
+
+        // JSON response
+        if (request()->expectsJson()) {
+            return response()->json([
+                'message' => 'روزکاری افزوده شد',
+                'status' => 'success'
+            ], 200);
+        }
+
         return back();
     }
 
@@ -91,14 +66,51 @@ class CalendarController extends Controller
      */
     public function update(Request $request, Calendar $calendar)
     {
+        foreach ($calendar->schedules as $schedule) {
+            if (! $schedule->appointments->isEmpty()) {
+                Alert::error('خطا!', 'روزکاری انتخاب شده را به دلیل وجود نوبت نمیتوان تعطیل کرد.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز.',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
+        }
+
+        if ($calendar->date < now('+03:30')) {
+            Alert::error('خطا!', 'روزکاری منقضی شده را نمیتوان تعطیل کرد.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'عملیات غیر مجاز.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return back();
+        }
         $calendar->update([
             'is_holiday' => ! $calendar->is_holiday
         ]);
 
-        // json respone and redirect
-        response()->json([
-            'message' => 'روز کاری با موفقیت ویرایش شد'
-        ]);
+        $work_day_status = $calendar->is_holiday ? 'تعطیل' : 'فعال';
+
+        Alert::success('موفق!', "روز کاری با موفقیت $work_day_status شد");
+
+        // JSON response
+        if (request()->expectsJson()) {
+            return response()->json([
+                'message' => "روز کاری با موفقیت $work_day_status شد",
+                'status' => 'success'
+            ], 200);
+        }
+
         return back();
     }
 
@@ -107,14 +119,50 @@ class CalendarController extends Controller
      */
     public function destroy(Calendar $calendar)
     {
-        // TODO add validation if admin tries to delete the day as work day, bans admin from that action if there was appointments added to that day
-        // TODO add for all methods if is happening in past show alert
+        // prevent deleting date if there is patient reservation exists
+        foreach ($calendar->schedules as $schedule) {
+            if (! $schedule->appointments->isEmpty()) {
+                Alert::error('خطا!', 'روزکاری انتخاب شده را به دلیل وجود نوبت نمیتوان حذف کرد.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'عملیات غیر مجاز.',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                return back();
+            }
+        }
+
+        // prevent from deleteing if calendars's date is < now
+        if ($calendar->date < now('+03:30')) {
+            Alert::error('خطا!', 'روزکاری منقضی شده را نمیتوان حذف کرد.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'عملیات غیر مجاز.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return back();
+        }
+
         $calendar->deleteOrFail();
 
-        // json respone and redirect
-        response()->json([
-            'message' => 'روز کاری با موفقیت حذف شد'
-        ]);
+        Alert::success('موفق!', 'روز کاری با موفقیت حذف شد.');
+
+        // JSON response
+        if (request()->expectsJson()) {
+            return response()->json([
+                'message' => 'روز کاری با موفقیت حذف شد.',
+                'status' => 'success'
+            ], 200);
+        }
+
         return back();
     }
 }
