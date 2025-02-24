@@ -28,6 +28,7 @@ class CalendarController extends Controller
      */
     public function store(Request $request)
     {
+        // prevent if user tries to add empty value
         if ($request['add_work_date'] == '') {
             Alert::error('خطا!', 'تقویم نمیتواند خالی باشد.');
 
@@ -35,6 +36,21 @@ class CalendarController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'message' => 'تقویم کاری خالی میباشد.',
+                    'status' => 'error'
+                ], 500);
+            }
+
+            return back();
+        }
+
+        // prevent if user tries to add work day in past
+        if ($request['add_work_date'] < now('+03:30')) {
+            Alert::error('خطا!', 'نمیتوان در تاریخ های گذشته روزکاری افزود.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'افزودن روزکاری در گذشته',
                     'status' => 'error'
                 ], 500);
             }
