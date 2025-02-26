@@ -6,6 +6,7 @@ use App\Models\Calendar;
 use App\Models\MedicalServices;
 use App\Models\Personnel;
 use App\Models\Room;
+use App\Models\Rule;
 use App\Models\Schedule;
 use App\Rules\FromTimeValidation;
 use App\Rules\PersonnelValidation;
@@ -25,63 +26,68 @@ class ScheduleController extends Controller
     {
     // get data from DB
         // personnel
-        $personnels = Personnel::query();
+        // $personnels = Personnel::query();
 
         // search personnel
-        if ($request->has('search')) {
-            $keyword = $request['search'];
-            $personnels->where('full_name', 'like', "%$keyword%")->orWhere('personnel_code', 'like', "%$keyword%");
-        }
-        $personnels = $personnels->latest()->paginate(5);
+        // if ($request->has('search')) {
+        //     $keyword = $request['search'];
+        //     $personnels->where('full_name', 'like', "%$keyword%")->orWhere('personnel_code', 'like', "%$keyword%");
+        // }
+        // $personnels = $personnels->latest()->paginate(5);
 
         // room
-        $rooms = Room::all();
+        // $rooms = Room::all();
 
         // Determine the start and end dates of the current week. change value if we have gotodate name
-        $currentDate = Carbon::now();
-        if ($request->has('week')) {
-            $currentDate = Carbon::parse($request['week']);
-        } else if ($request->has('gotodate')) {
-            $currentDate = Carbon::parse($request['gotodate']);
-        } else if ($request->has('selectedWeek')) {
-            $currentDate = Carbon::parse($request['selectedWeek']);
-        }
+        // $currentDate = Carbon::now();
+        // if ($request->has('week')) {
+        //     $currentDate = Carbon::parse($request['week']);
+        // } else if ($request->has('gotodate')) {
+        //     $currentDate = Carbon::parse($request['gotodate']);
+        // } else if ($request->has('selectedWeek')) {
+        //     $currentDate = Carbon::parse($request['selectedWeek']);
+        // }
 
-        // define firstday as satureday and lastday of week as friday
-        $startOfWeek = $currentDate->copy()->startOfWeek(6);
-        $endOfWeek = $startOfWeek->copy()->addDays(6);
+        // // define firstday as satureday and lastday of week as friday
+        // $startOfWeek = $currentDate->copy()->startOfWeek(6);
+        // $endOfWeek = $startOfWeek->copy()->addDays(6);
 
-        // Retrieve calendar entries for the current week
-        $calendars = Calendar::with('schedules')->whereBetween('date', [$startOfWeek, $endOfWeek])->get();
+        // // Retrieve calendar entries for the current week
+        // $calendars = Calendar::with('schedules')->whereBetween('date', [$startOfWeek, $endOfWeek])->get();
 
-        // Extract schedules from the calendars
-        $schedules = collect();
-        foreach ($calendars as $calendar) {
-            $schedules = $schedules->merge($calendar->schedules);
-        }
+        // // Extract schedules from the calendars
+        // $schedules = collect();
+        // foreach ($calendars as $calendar) {
+        //     $schedules = $schedules->merge($calendar->schedules);
+        // }
 
-        // Get the list of personnel IDs who have shifts in the current week
-        $chosen_personnels = $schedules->pluck('personnel_id')->unique()->toArray();
+        // // Get the list of personnel IDs who have shifts in the current week
+        // $chosen_personnels = $schedules->pluck('personnel_id')->unique()->toArray();
 
-        // If a personnel is selected via the request, add it to the chosen_personnels array
-        if ($request['personnel_id']) {
-            array_push($chosen_personnels, $request['personnel_id']);
-        }
+        // // If a personnel is selected via the request, add it to the chosen_personnels array
+        // if ($request['personnel_id']) {
+        //     array_push($chosen_personnels, $request['personnel_id']);
+        // }
 
-        // Convert dates to Jalalian
-        $startOfWeekJalali = jdate($startOfWeek);
-        $endOfWeekJalali = jdate($endOfWeek);
+        // // Convert dates to Jalalian
+        // $startOfWeekJalali = jdate($startOfWeek);
+        // $endOfWeekJalali = jdate($endOfWeek);
 
+        $schedules = Schedule::with('room', 'personnel', 'service', 'appointments', 'calendar')->get();
+        $calendars = Calendar::with('schedules')->get();
+        $rooms = Room::all();
+        $rules = Rule::all();
+        $personnels = Personnel::with('user.rules', 'medicalservices')->get();
+
+// foreach ($calendars as $key) {
+//     dd($key->schedules);
+// }
         return view('admin.schedule.all-schedule', [
-            'schedules' => $schedules,
             'calendars' => $calendars,
-            'startOfWeek' => $startOfWeekJalali,
-            'endOfWeek' => $endOfWeekJalali,
-            'currentDate' => $currentDate,
+            'schedules' => $schedules,
             'personnels' => $personnels,
-            'chosen_personnels' => $chosen_personnels,
             'rooms' => $rooms,
-            'selectedWeek' => $currentDate->toDateString()
+            'rules' => $rules,
         ]);
     }
 
@@ -90,10 +96,11 @@ class ScheduleController extends Controller
      */
     public function store(Request $request)
     {
+        // dd($request->all());
         // get date of the day as Carbon
         $identifier = $request['schedule_date_id'] . '_' . $request['personnel_id'];
         $date = Calendar::find($request['schedule_date_id']);
-        $selected_work_day = Carbon::parse(Carbon::parse($date->date))->toDateString();
+        $selected_work_day = Carbon::parse($date->date)->toDateString();
         $selected_work_day_with_from_date = "$selected_work_day {$request['from_date_' . $identifier]}:00";
         $selected_work_day_with_to_date = "$selected_work_day {$request['to_date_' . $identifier]}:00";
 
@@ -118,12 +125,22 @@ class ScheduleController extends Controller
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
-                ->with("modal_open_{$identifier}", true);
+                ->with("modal_open", $request['schedule_date_id'] . '-' . $request['personnel_id'])
+                ->with('selected_personnel', $request['personnel_id']);
         }
 
         // stop storing to DB if request time is occuring in past
-        if (jdate($selected_work_day_with_from_date) < jdate(Carbon::now('Asia/Tehran'))) {
-            Alert::error('عملیات غیرمجاز!', 'نمیتوان در تاریخ گذشته تغییراتی انجام داد.');
+        if ($selected_work_day_with_from_date < now('+03:30')->toDateTimeString()) {
+            Alert::error('عملیات غیرمجاز!', 'نمیتوان در تاریخ گذشته شیفتی افزود.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'عملیات غیر مجاز (تغییرات در تاریخ گذشته)',
+                    'status' => 'error'
+                ], 422);
+            }
+
             return back();
         }
 
@@ -159,7 +176,7 @@ class ScheduleController extends Controller
                                 ->exists();
 
             if ($duplication_exist) {
-                Alert::error('خطا!','مورد مشابه قبلا در سیستم ثبت شده است!');
+                Alert::error('خطا!','موردی مشابه قبلا در سیستم ثبت شده است!');
 
                 // JSON response
                 if (request()->expectsJson()) {

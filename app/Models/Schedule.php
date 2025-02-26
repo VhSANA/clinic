@@ -24,7 +24,7 @@ class Schedule extends Model
     // relations
     public function calendar()
     {
-        return $this->belongsTo(Calendar::class);
+        return $this->belongsTo(Calendar::class, 'schedule_date_id');
     }
     public function appointments()
     {

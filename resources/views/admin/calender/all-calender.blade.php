@@ -15,6 +15,8 @@
                     <div class="" id="next-month">
                         <x-app.button.left-arrow >ماه بعدی</x-app.button.left-arrow>
                     </div>
+
+                    {{-- modal --}}
                     <div id="mini-calendar-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-50 hidden">
                         <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                             <div class="flex justify-between items-center mb-4">
