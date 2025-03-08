@@ -179,28 +179,30 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <table class="mt-5 w-full text-sm text-left rtl:text-center text-gray-800 dark:text-gray-400 rounded-lg overflow-hidden">
-                                        <thead id="schedule-table-head" class="hidden text-xs text-white uppercase bg-gray-800 dark:bg-gray-200 dark:text-gray-400 rounded-t-lg">
-                                            <tr class="rounded-t-lg border-b border-gray-300">
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">نام پرسنل</th>
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">شنبه</th>
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">یک شنبه</th>
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">دو شنبه</th>
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">سه شنبه</th>
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">چهار شنبه</th>
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">پنج شنبه</th>
-                                                <th scope="col" class="px-6 py-3 border-r border-gray-300">جمعه</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="schedule-table-body">
-                                            <tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
-                                                <td colspan="8" class="px-6 py-4">
-                                                    هیچ شیفتی ثبت نشده است. <br><br>
-                                                    برای افزودن شیفت، ابتدا پرسنل موردنظر را انتخاب کنید.
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                    <div class="overflow-x-auto">
+                                        <table class="mt-5 w-full text-sm text-left rtl:text-center text-gray-800 dark:text-gray-400 rounded-lg overflow-hidden">
+                                            <thead id="schedule-table-head" class="hidden text-xs text-white uppercase bg-gray-800 dark:bg-gray-200 dark:text-gray-400 rounded-t-lg">
+                                                <tr class="rounded-t-lg border-b border-gray-300">
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">نام پرسنل</th>
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">شنبه</th>
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">یک شنبه</th>
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">دو شنبه</th>
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">سه شنبه</th>
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">چهار شنبه</th>
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">پنج شنبه</th>
+                                                    <th scope="col" class="px-6 py-3 border-r border-gray-300">جمعه</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="schedule-table-body">
+                                                <tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
+                                                    <td colspan="8" class="px-6 py-4">
+                                                        هیچ شیفتی ثبت نشده است. <br><br>
+                                                        برای افزودن شیفت، ابتدا پرسنل موردنظر را انتخاب کنید.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -603,11 +605,12 @@
                 document.querySelectorAll("[id^=open-add-schedule-modal-]").forEach(btn => {
                     btn.addEventListener("click", (event) => {
                         const identifier = event.currentTarget.id.replace("open-add-schedule-modal-", "");
+                        const relatedPersonnel = personnels.find(personnel => personnel.id == identifier.split('-')[1]);
                         const addScheduleModal = document.getElementById(`add-schedule-modal-${identifier}`);
 
                         if (addScheduleModal) {
                             addScheduleModal.classList.remove("hidden");
-                            generateServicesSelectBox(personnel, identifier);
+                            generateServicesSelectBox(relatedPersonnel, identifier);
                             generateRoomsSelectBox(identifier);
                         }
                     });
@@ -646,7 +649,7 @@
                             const schedule = schedules.find(schedule => schedule.id == scheduleId);
                             let options = '';
 
-                            personnel.medicalservices.forEach(service => {
+                            schedule.personnel.medicalservices.forEach(service => {
                                 options += `<option value="${service.id}" ${schedule.service.id == service.id ? 'selected' : ''}>${service.name}</option>`;
                             });
                             serviceBox.innerHTML = options;
@@ -849,7 +852,10 @@
                 options += `<option disabled selected value="">یکی از خدمات زیر را انتخاب کنید.</option>`;
 
                 personnel.medicalservices.forEach(service => {
-                    options += `<option value="${service.id}">${service.name}</option>`;
+                    console.log(service.pivot.personnel_id , personnel.id, service, personnel)
+                    if (service.pivot.personnel_id == personnel.id) {
+                        options += `<option value="${service.id}">${service.name}</option>`;
+                    }
                 });
 
                 serviceSelectBox.innerHTML = options;

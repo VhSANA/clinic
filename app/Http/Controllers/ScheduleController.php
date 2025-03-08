@@ -23,7 +23,7 @@ class ScheduleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
         $schedules = Schedule::with('room', 'personnel', 'service', 'appointments', 'calendar', 'personnel.medicalservices')->get();
         $calendars = Calendar::with('schedules', 'schedules.room', 'schedules.personnel', 'schedules.service', 'schedules.appointments')->get();
@@ -31,8 +31,12 @@ class ScheduleController extends Controller
         $rules = Rule::all();
         $personnels = Personnel::with('user.rules', 'medicalservices')->get();
 
-// foreach ($schedules as $key) {
-//     dd($key->personnel);
+
+// foreach ($personnels as $personnel) {
+//     foreach ($personnel->medicalservices as $service) {
+//         dd($service->pivot);
+
+//     }
 // }
         return view('admin.schedule.all-schedule', [
             'calendars' => $calendars,
@@ -48,9 +52,11 @@ class ScheduleController extends Controller
      */
     public function store(Request $request)
     {
+
         // get date of the day as Carbon
         $identifier = $request['schedule_date_id'] . '_' . $request['personnel_id'];
         $date = Calendar::find($request['schedule_date_id']);
+        $personnel = Personnel::find($request['personnel_id']);
         $selected_work_day = Carbon::parse($date->date)->toDateString();
         $selected_work_day_with_from_date = "$selected_work_day {$request['from_date_' . $identifier]}:00";
         $selected_work_day_with_to_date = "$selected_work_day {$request['to_date_' . $identifier]}:00";
@@ -78,6 +84,21 @@ class ScheduleController extends Controller
                 ->withInput()
                 ->with("add_schedule_modal", $request['schedule_date_id'] . '-' . $request['personnel_id'])
                 ->with('selected_personnel', $request['personnel_id']);
+        }
+
+        // check selected service is related to selected personnel
+        if (! $personnel->medicalservices->contains('id', $request['service_' . $identifier])) {
+            Alert::error('عملیات غیرمجاز!', 'مغایرت میان پرسنل و خدمت انتخاب شده.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'مغایرت میان پرسنل و خدمت درمانی',
+                    'status' => 'error'
+                ], 422);
+            }
+
+            return back();
         }
 
         // stop storing to DB if request time is occuring in past
@@ -214,12 +235,6 @@ class ScheduleController extends Controller
                 ->with("edit_schedule_modal", $identifier);
         }
 
-        // if from_date is < now prevent user from editing
-        if ((jdate($schedule->from_date) < jdate(Carbon::now('Asia/Tehran')))) {
-            Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را ویرایش کرد.');
-            return back();
-        }
-
         // get capacity of room in selected day
         $room = Room::find($request['room_' . $identifier]);
         $calendar = Calendar::firstWhere('date', Carbon::parse($selected_work_day)->toDateTimeString());
@@ -227,6 +242,50 @@ class ScheduleController extends Controller
         $room_count = array_count_values($room_ids)[$room->id] ?? 0;
 
         try {
+            if (! $schedule->personnel->medicalservices->contains('id', $request['service_' . $identifier])) {
+                Alert::error('عملیات غیرمجاز!', 'مغایرت میان پرسنل و خدمت انتخاب شده.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'مغایرت میان پرسنل و خدمت درمانی',
+                        'status' => 'error'
+                    ], 422);
+                }
+
+                return back();
+            }
+
+            // if from_date is < now prevent user from editing
+            if ((jdate($schedule->from_date) < jdate(Carbon::now('Asia/Tehran')))) {
+                Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را ویرایش کرد.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'ویرایش شیفت در گذشته',
+                        'status' => 'error'
+                    ], status: 422);
+                }
+
+                return back();
+            }
+
+            // prevent deleting schedule if there is appointments
+            if (! $schedule->appointments->isEmpty()) {
+                Alert::error('عملیات غیرمجاز!', 'به دلیل وجود نوبت، نمیتوان تاریخ مورد نظر را ویرایش کرد.');
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'حذف شیفت نوبت دار',
+                        'status' => 'error'
+                    ], status: 422);
+                }
+
+                return back();
+            }
+
             // check if selected room == room saved in DB => ignore personnel_capacity
             if (! $room->id == $schedule->room_id) {
                 if ($room_count >= $room->personnel_capacity) {
@@ -292,7 +351,6 @@ class ScheduleController extends Controller
 
             return back();
         } catch (\Throwable $e) {
-            throw $e;
             Alert::error('خطا!', 'مشکلی در ویرایش شیفت کاری به وجود آمد.');
 
             // JSON response
@@ -312,22 +370,37 @@ class ScheduleController extends Controller
      */
     public function destroy(Schedule $schedule)
     {
-        // stop delete if present time has passed date
-        if ($schedule->from_date < now('+03:30')) {
-            Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را حذف کرد.');
+        try {
+            // prevent deleting schedule if there is appointments
+            if (! $schedule->appointments->isEmpty()) {
+                Alert::error('عملیات غیرمجاز!', 'به دلیل وجود نوبت، نمیتوان تاریخ مورد نظر را حذف کرد.');
 
-            // JSON response
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'message' => 'حذف شیفت در گذشته',
-                    'status' => 'error'
-                ], status: 422);
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'حذف شیفت نوبت دار',
+                        'status' => 'error'
+                    ], status: 422);
+                }
+
+                return back();
             }
 
-            return back();
-        }
+            // stop delete if present time has passed date
+            if ($schedule->from_date < now('+03:30')) {
+                Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را حذف کرد.');
 
-        try {
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'حذف شیفت در گذشته',
+                        'status' => 'error'
+                    ], status: 422);
+                }
+
+                return back();
+            }
+
             $schedule->deleteOrFail();
 
             // success alert
@@ -492,14 +565,11 @@ class ScheduleController extends Controller
 
             return back();
         } catch (\Throwable $e) {
-throw $e;
-
             // JSON response
             if (request()->expectsJson()) {
                 return response()->json([
                     'message' => 'خطایی رخ داده است.',
                     'status' => 'error',
-                    'data' => $e
                 ], 500);
             }
 
