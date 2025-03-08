@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use RealRashid\SweetAlert\Facades\Alert;
+use Illuminate\Support\Facades\Log;
 
 class ScheduleController extends Controller
 {
@@ -24,63 +25,14 @@ class ScheduleController extends Controller
      */
     public function index(Request $request)
     {
-    // get data from DB
-        // personnel
-        // $personnels = Personnel::query();
-
-        // search personnel
-        // if ($request->has('search')) {
-        //     $keyword = $request['search'];
-        //     $personnels->where('full_name', 'like', "%$keyword%")->orWhere('personnel_code', 'like', "%$keyword%");
-        // }
-        // $personnels = $personnels->latest()->paginate(5);
-
-        // room
-        // $rooms = Room::all();
-
-        // Determine the start and end dates of the current week. change value if we have gotodate name
-        // $currentDate = Carbon::now();
-        // if ($request->has('week')) {
-        //     $currentDate = Carbon::parse($request['week']);
-        // } else if ($request->has('gotodate')) {
-        //     $currentDate = Carbon::parse($request['gotodate']);
-        // } else if ($request->has('selectedWeek')) {
-        //     $currentDate = Carbon::parse($request['selectedWeek']);
-        // }
-
-        // // define firstday as satureday and lastday of week as friday
-        // $startOfWeek = $currentDate->copy()->startOfWeek(6);
-        // $endOfWeek = $startOfWeek->copy()->addDays(6);
-
-        // // Retrieve calendar entries for the current week
-        // $calendars = Calendar::with('schedules')->whereBetween('date', [$startOfWeek, $endOfWeek])->get();
-
-        // // Extract schedules from the calendars
-        // $schedules = collect();
-        // foreach ($calendars as $calendar) {
-        //     $schedules = $schedules->merge($calendar->schedules);
-        // }
-
-        // // Get the list of personnel IDs who have shifts in the current week
-        // $chosen_personnels = $schedules->pluck('personnel_id')->unique()->toArray();
-
-        // // If a personnel is selected via the request, add it to the chosen_personnels array
-        // if ($request['personnel_id']) {
-        //     array_push($chosen_personnels, $request['personnel_id']);
-        // }
-
-        // // Convert dates to Jalalian
-        // $startOfWeekJalali = jdate($startOfWeek);
-        // $endOfWeekJalali = jdate($endOfWeek);
-
-        $schedules = Schedule::with('room', 'personnel', 'service', 'appointments', 'calendar')->get();
-        $calendars = Calendar::with('schedules')->get();
+        $schedules = Schedule::with('room', 'personnel', 'service', 'appointments', 'calendar', 'personnel.medicalservices')->get();
+        $calendars = Calendar::with('schedules', 'schedules.room', 'schedules.personnel', 'schedules.service', 'schedules.appointments')->get();
         $rooms = Room::all();
         $rules = Rule::all();
         $personnels = Personnel::with('user.rules', 'medicalservices')->get();
 
-// foreach ($calendars as $key) {
-//     dd($key->schedules);
+// foreach ($schedules as $key) {
+//     dd($key->personnel);
 // }
         return view('admin.schedule.all-schedule', [
             'calendars' => $calendars,
@@ -96,7 +48,6 @@ class ScheduleController extends Controller
      */
     public function store(Request $request)
     {
-        // dd($request->all());
         // get date of the day as Carbon
         $identifier = $request['schedule_date_id'] . '_' . $request['personnel_id'];
         $date = Calendar::find($request['schedule_date_id']);
@@ -125,7 +76,7 @@ class ScheduleController extends Controller
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
-                ->with("modal_open", $request['schedule_date_id'] . '-' . $request['personnel_id'])
+                ->with("add_schedule_modal", $request['schedule_date_id'] . '-' . $request['personnel_id'])
                 ->with('selected_personnel', $request['personnel_id']);
         }
 
@@ -234,7 +185,7 @@ class ScheduleController extends Controller
         // get date of day and other details
         $identifier = $schedule->id;
         $date = Calendar::find($request['schedule_date_id']);
-        $selected_work_day = Carbon::parse(Carbon::parse($date->date))->toDateString();
+        $selected_work_day = Carbon::parse($date->date)->toDateString();
         $selected_work_day_with_from_date = "$selected_work_day {$request['from_date_' . $identifier]}";
         $selected_work_day_with_to_date = "$selected_work_day {$request['to_date_' . $identifier]}";
 
@@ -260,7 +211,7 @@ class ScheduleController extends Controller
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
-                ->with("edit_modal_open_{$identifier}", true);
+                ->with("edit_schedule_modal", $identifier);
         }
 
         // if from_date is < now prevent user from editing
@@ -340,7 +291,8 @@ class ScheduleController extends Controller
             Alert::success('عملیات موفقیت آمیز!', 'شیفت کاری با موفقیت ویرایش شد.');
 
             return back();
-        } catch (\Exception $E) {
+        } catch (\Throwable $e) {
+            throw $e;
             Alert::error('خطا!', 'مشکلی در ویرایش شیفت کاری به وجود آمد.');
 
             // JSON response
@@ -361,8 +313,17 @@ class ScheduleController extends Controller
     public function destroy(Schedule $schedule)
     {
         // stop delete if present time has passed date
-        if ((jdate($schedule->from_date) < jdate(Carbon::now('Asia/Tehran')))) {
+        if ($schedule->from_date < now('+03:30')) {
             Alert::error('عملیات غیرمجاز!', 'نمیتوان تاریخ و زمان گذشته را حذف کرد.');
+
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'حذف شیفت در گذشته',
+                    'status' => 'error'
+                ], status: 422);
+            }
+
             return back();
         }
 
@@ -380,7 +341,7 @@ class ScheduleController extends Controller
                 ], 200);
             }
 
-            return redirect()->back();
+            return back();
         } catch (\Exception $e) {
             // error alert
             Alert::error('خطا!', 'مشکلی در حذف شیفت کاری به وجود آمد.');
@@ -393,63 +354,19 @@ class ScheduleController extends Controller
                 ], 500);
             }
 
-            return redirect()->back();
-        }
-    }
-
-    /**
-     * Copy the specified resource from schedule.
-     */
-    public function copy(Request $request, Schedule $schedule)
-    {
-        try {
-            // Store the copied schedule data in the session
-            session()->put('copied_schedule', [
-                'title' => $schedule->title,
-                'from_date' => $schedule->from_date,
-                'to_date' => $schedule->to_date,
-                'personnel_id' => $schedule->personnel_id,
-                'room_id' => $schedule->room_id,
-                'medical_service_id' => $schedule->medical_service_id,
-            ]);
-
-            // JSON response
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'message' => 'شیفت کاری با موفقیت کپی شد!',
-                    'status' => 'success'
-                ], 200);
-            }
-
-            Alert::toast('شیفت کاری با موفقیت کپی شد!');
-
-            return back();
-        } catch (\Exception $e) {
-            Alert::toast('خطایی رخ داده است.');
-
-            // JSON response
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'message' => 'خطایی رخ داده است.',
-                    'status' => 'error'
-                ], 422);
-            }
-
             return back();
         }
     }
+
     /**
      * paste the specified resource from schedule.
      */
-    public function paste(Request $request, Personnel $personnel)
+    public function paste(Request $request)
     {
         try {
-            // Retrieve the copied schedule data from the session
-            $copiedSchedule = session()->get('copied_schedule');
-
             // return back user if there is nothing to paste
-            if (!$copiedSchedule) {
-                Alert::toast('شیفتی برای جاگذاری وجود ندارد!');
+            if (empty($request->all())) {
+
 
                 // JSON response
                 if (request()->expectsJson()) {
@@ -463,8 +380,23 @@ class ScheduleController extends Controller
             }
 
             // check if copied shift's personnel == the personnel we want to paste new shift to it
-            if ($personnel->id != $copiedSchedule['personnel_id']) {
-                Alert::error("عملیات غیر مجاز!", "شیفت مورد نظر فقط برای " . Personnel::find($copiedSchedule['personnel_id'])->full_name . ' قابلیت کپی دارد');
+            $personnel = Personnel::find($request['personnel_id']);
+            if (!$personnel) {
+
+
+                // JSON response
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'کاربر انتخاب شده وجود ندارد',
+                        'status' => 'error'
+                    ], 422);
+                }
+
+                return back();
+            }
+
+            if ($request['check_personnel'] != $request['personnel_id']) {
+
 
                 // JSON response
                 if (request()->expectsJson()) {
@@ -478,20 +410,29 @@ class ScheduleController extends Controller
             }
 
             // get capacity of room in selected day
-            $room = Room::find($copiedSchedule['room_id']);
-            $calendar = Calendar::find($request['date']);
+            $room = Room::find($request['room_id']);
+            $calendar = Calendar::find($request['schedule_date_id']);
             $room_ids = $calendar->schedules->pluck('room_id')->toArray();
             $room_count = array_count_values($room_ids)[$room->id] ?? 0;
 
             // stop storing to DB if request time is occuring in past
-            if (jdate(Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($copiedSchedule['from_date'])->toTimeString())->toDateTimeString() < jdate(Carbon::now('Asia/Tehran'))->toDateTimeString()) {
-                Alert::error('عملیات غیرمجاز!', '.ساعات شیفت کپی شده از زمان حال گذشته است');
+            if (Carbon::parse($calendar->date)->toDatestring() . ' ' . Carbon::parse($request['from_date'])->toTimeString() < Carbon::now('Asia/Tehran')->toDateTimeString()) {
+
+
+                if (request()->expectsJson()) {
+                    return response()->json([
+                        'data' => $request->all(),
+                        'message' => 'عملیات غیر مجاز',
+                        'status' => 'error'
+                    ], 422);
+                }
+
                 return back();
             }
 
             // check if room has capacity or not
             if ($room_count >= $room->personnel_capacity) {
-                Alert::error('خطا!','ظرفیت اتاق تکمیل میباشد!');
+
 
                 // JSON response
                 if (request()->expectsJson()) {
@@ -505,16 +446,16 @@ class ScheduleController extends Controller
             }
 
             // prevent from adding duplicated value
-            $duplication_exist = Schedule::where('from_date', Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($copiedSchedule['from_date'])->toTimeString())
-                                ->where('to_date', Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($copiedSchedule['to_date'])->toTimeString())
+            $duplication_exist = Schedule::where('from_date', Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($request['from_date'])->toTimeString())
+                                ->where('to_date', Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($request['to_date'])->toTimeString())
                                 ->where('schedule_date_id', $calendar->id)
                                 ->where('personnel_id', $personnel->id)
-                                ->where('medical_service_id', $copiedSchedule['medical_service_id'])
-                                ->where('room_id', $copiedSchedule['room_id'])
+                                ->where('medical_service_id', $request['service_id'])
+                                ->where('room_id', $request['room_id'])
                                 ->exists();
 
             if ($duplication_exist) {
-                Alert::error('خطا!','مورد مشابه قبلا در سیستم ثبت شده است!');
+
 
                 // JSON response
                 if (request()->expectsJson()) {
@@ -529,13 +470,13 @@ class ScheduleController extends Controller
 
             // save to DB
             Schedule::create([
-                'title' => $copiedSchedule['title'],
-                'from_date' => Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($copiedSchedule['from_date'])->toTimeString(),
-                'to_date' => Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($copiedSchedule['to_date'])->toTimeString(),
+                'title' => $request['title'],
+                'from_date' => Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($request['from_date'])->toTimeString(),
+                'to_date' => Carbon::parse($calendar->date)->toDatestring() . ' ' . jdate($request['to_date'])->toTimeString(),
                 'schedule_date_id' => $calendar->id,
-                'room_id' => $copiedSchedule['room_id'],
-                'personnel_id' => $personnel->id,
-                'medical_service_id' => $copiedSchedule['medical_service_id'],
+                'room_id' => $request['room_id'],
+                'personnel_id' => $request['personnel_id'],
+                'medical_service_id' => $request['service_id'],
                 'is_appointable' => true,
             ]);
 
@@ -547,17 +488,18 @@ class ScheduleController extends Controller
             }
 
             // success alert
-            Alert::success('عملیات موفقیت آمیز!', 'شیفت کاری با موفقیت افزوده شد.');
+
 
             return back();
-        } catch (\Exception $e) {
-            Alert::toast('خطایی رخ داده است.');
+        } catch (\Throwable $e) {
+throw $e;
 
             // JSON response
             if (request()->expectsJson()) {
                 return response()->json([
                     'message' => 'خطایی رخ داده است.',
-                    'status' => 'error'
+                    'status' => 'error',
+                    'data' => $e
                 ], 500);
             }
 

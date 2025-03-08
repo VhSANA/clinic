@@ -59,7 +59,7 @@
                         </div>
                     </div>
                     <!-- Button to Open Modal -->
-                    <button id="open-mini-calendar" class="flex justify-between items-center gap-2 text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-3  mb-2 dark:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none dark:focus:ring-gray-800 transition cursor-pointer">جستجوی تاریخ <x-icons.search /></button>
+                    <button id="open-mini-calendar" class="flex justify-between items-center gap-2 text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-3  mb-2 dark:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none dark:focus:ring-gray-800 transition cursor-pointer"><x-icons.calendar /></button>
                 </div>
                 <div class="flex justify-between items-center gap-5 ml-2">
                     <div class="flex flex-col justify-between items-center">
@@ -103,7 +103,7 @@
         const calendars = @json($calendars);
         const mainCalendar = document.getElementById('calendar-table-body');
         const currentDate = new Date();
-        const todayDate =jalaali.toJalaali(currentDate.getFullYear(), currentDate.getMonth() + 1, currentDate.getDate());
+        const todayDate = jalaali.toJalaali(currentDate.getFullYear(), currentDate.getMonth() + 1, currentDate.getDate());
         let jalaliDate = jalaali.toJalaali(currentDate.getFullYear(), currentDate.getMonth() + 1, currentDate.getDate());
         const currentMonthAndYear = document.getElementById('current-month-year');
 
@@ -167,11 +167,11 @@
         }
 
         function getPersianDaysOfWeak(jalaliDay) {
-            const daysOfWeek = ['یک شنبه', 'دو شنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه', 'شنبه',];
-            return daysOfWeek[jalaliDay - 1];
+            const daysOfWeek = ['یک شنبه', 'دو شنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه', 'شنبه'];
+            return daysOfWeek[jalaliDay];
         }
 
-        currentMonthAndYear.innerText = `${getPersianDaysOfWeak(todayDate.jd)} ${todayDate.jd} ${getPersianMonthsOfYear(todayDate.jy, todayDate.jm)}`;
+        currentMonthAndYear.innerText = `${getPersianDaysOfWeak(currentDate.getDay())} ${todayDate.jd} ${getPersianMonthsOfYear(todayDate.jy, todayDate.jm)}`;
 
         // route without refreshing through months
         document.getElementById('prev-month').addEventListener('click', function () {

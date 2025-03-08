@@ -70,10 +70,7 @@ Route::resource('calendar', CalendarController::class)->except(['create', 'show'
 
 // schedule
 Route::resource('schedule', ScheduleController::class)->except(['create', 'show', 'edit']);
-Route::prefix('schedule')->controller(ScheduleController::class)->group(function () {
-    Route::post('/{schedule}/copy', 'copy')->name('schedule.copy');
-    Route::post('/{personnel}/{date}/paste', 'paste')->name('schedule.paste');
-});
+Route::post('/schedule/paste', [ScheduleController::class, 'paste'])->name('schedule.paste');
 
 // appointments
 Route::prefix('appointments')->controller(AppointmentController::class)->group(function () {
