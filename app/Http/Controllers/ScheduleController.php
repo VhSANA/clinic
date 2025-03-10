@@ -25,26 +25,33 @@ class ScheduleController extends Controller
      */
     public function index()
     {
-        $schedules = Schedule::with('room', 'personnel', 'service', 'appointments', 'calendar', 'personnel.medicalservices')->get();
-        $calendars = Calendar::with('schedules', 'schedules.room', 'schedules.personnel', 'schedules.service', 'schedules.appointments')->get();
-        $rooms = Room::all();
-        $rules = Rule::all();
-        $personnels = Personnel::with('user.rules', 'medicalservices')->get();
+        try {
+            $schedules = Schedule::with('room', 'personnel', 'service', 'appointments', 'calendar', 'personnel.medicalservices')->get();
+            $calendars = Calendar::with('schedules', 'schedules.room', 'schedules.personnel', 'schedules.service', 'schedules.appointments')->get();
+            $rooms = Room::all();
+            $rules = Rule::all();
+            $personnels = Personnel::with('user.rules', 'medicalservices')->latest()->get();
 
+            return view('admin.schedule.all-schedule', [
+                'calendars' => $calendars,
+                'schedules' => $schedules,
+                'personnels' => $personnels,
+                'rooms' => $rooms,
+                'rules' => $rules,
+            ]);
+        } catch (\Exception $e) {
+            Alert::toast('خطایی در دریافت اطلاعات رخ داده است.');
 
-// foreach ($personnels as $personnel) {
-//     foreach ($personnel->medicalservices as $service) {
-//         dd($service->pivot);
+            // JSON response
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'message' => 'خطایی رخ داده است.',
+                    'status' => 'error'
+                ], 500);
+            }
 
-//     }
-// }
-        return view('admin.schedule.all-schedule', [
-            'calendars' => $calendars,
-            'schedules' => $schedules,
-            'personnels' => $personnels,
-            'rooms' => $rooms,
-            'rules' => $rules,
-        ]);
+            return back();
+        }
     }
 
     /**

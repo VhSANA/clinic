@@ -245,10 +245,15 @@
 
             // Function to get the start and end dates of the current week
             function getWeekRange(date) {
+                const day = date.getDay(); // 0 (Sunday) to 6 (Saturday)
                 const startOfWeek = new Date(date);
-                startOfWeek.setDate(date.getDate() - date.getDay() - 1);
+                startOfWeek.setDate(date.getDate() - day + (day === 6 ? 0 : -day - 1)); // Adjust to Saturday
+                startOfWeek.setHours(0, 0, 0, 0); // Start of the day
+
                 const endOfWeek = new Date(startOfWeek);
-                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                endOfWeek.setDate(startOfWeek.getDate() + 6); // Add 6 days to reach Friday
+                endOfWeek.setHours(23, 59, 59, 999); // End of the day
+
                 return { startOfWeek, endOfWeek };
             }
 
@@ -840,8 +845,8 @@
                 return monthsOfYear[jalaliMonth - 1];
             }
             function getPersianDaysOfWeak(jalaliDay) {
-                const daysOfWeek = ['دو شنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یک شنبه'];
-                return daysOfWeek[jalaliDay - 1];
+                const daysOfWeek = [ 'یک شنبه', 'دو شنبه', 'سه شنبه', 'چهار شنبه', 'پنج شنبه', 'جمعه', 'شنبه',];
+                return daysOfWeek[jalaliDay];
             }
 
             // service options
