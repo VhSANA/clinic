@@ -4,7 +4,7 @@
 <div class="h-screen dark:bg-gray-700 bg-gray-200 pt-12">
     <!-- Card start -->
         <div class="max-w-sm mx-auto bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-lg">
-            @if (Auth::user()->id == $user->id)
+            @if (true) <!-- TODO add restriction for users -->
             <div class="border-b px-4 pb-6">
                 <div class="text-center my-4">
                     {{-- profile image --}}

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('icon')->nullable();
-            $table->boolean('display_in_list')->default(0);
+            $table->boolean('display_in_list')->default(1);
             $table->timestamps();
         });
     }

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Room;
 use Faker\Factory as FakerFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -29,5 +30,25 @@ class RoomFactory extends Factory
             'personnel_capacity' => $personnelCapacity,
             'patient_capacity' => $personnelCapacity * 2
         ];
+    }
+
+    /**
+     * Create entries for each room type.
+     *
+     * @return void
+     */
+    public static function createAll()
+    {
+        $roomTitles = ['عمل', 'ویزیت', 'اکو و تست ورزشی', 'لیزر', 'ویزیت بیمار خارجی', ];
+
+        $personnelCapacity = random_int(0,2);
+
+        foreach ($roomTitles as $title) {
+            Room::factory()->create([
+                'title' => "بیمه " . $title,
+                'personnel_capacity' => $personnelCapacity,
+                'patient_capacity' => $personnelCapacity * 2
+            ]);
+        }
     }
 }

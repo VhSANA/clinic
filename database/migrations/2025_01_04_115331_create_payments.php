@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('amount');
             $table->enum('payment_type', ['cash', 'card'])->default('cash');
             $table->text('description')->nullable();
-            $table->foreignId('invoice_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('invoice_id')->constrained('bill_patient_invoice', 'id')->cascadeOnUpdate()->cascadeOnDelete();
             $table->string('user_name');
             $table->foreignId('user_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->timestamps();

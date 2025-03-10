@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('schedul e_dates', function (Blueprint $table) {
+        Schema::create('schedule_dates', function (Blueprint $table) {
             $table->id();
             $table->boolean('is_holiday')->default(0);
             $table->string('date');

@@ -6,9 +6,13 @@ use App\Models\Insurance;
 use App\Models\MedicalServices;
 use App\Models\Patient;
 use App\Models\Personnel;
+use App\Models\PersonnelUser;
 use App\Models\Room;
 use App\Models\Rule;
+use App\Models\RuleUser;
 use App\Models\User;
+use Database\Factories\InsuranceFactory;
+use Database\Factories\MedicalServicesFactory;
 use Database\Factories\PersonnelFactory;
 use Database\Factories\RuleFactory;
 use Database\Factories\UserFactory;
@@ -41,11 +45,13 @@ class DatabaseSeeder extends Seeder
             'image_url' => fake()->imageUrl()
         ]);
         User::factory(6)->create();
-        Rule::factory(5)->create();
-        Personnel::factory(5)->create();
-        Insurance::factory(4)->create();
+        Rule::factory(3)->create();
+        RuleUser::factory(5)->create();
+        PersonnelFactory::createWithUserRelation(5);
+        InsuranceFactory::createAll();
         Patient::factory(10)->create();
-        MedicalServices::factory(10)->create();
+        MedicalServices::factory(5)->create();
+        MedicalServicesFactory::createWithRelations();
         Room::factory(5)->create();
     }
 }

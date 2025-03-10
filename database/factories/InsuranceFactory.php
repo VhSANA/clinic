@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Insurance;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Faker\Factory as FakerFactory;
 
@@ -19,12 +20,29 @@ class InsuranceFactory extends Factory
     {
         $faker = FakerFactory::create('fa_IR');
 
-        $insurance = ['ملت','ایران','تامین اجتماعی','نیروهای مسلح','خدمات درمانی',];
+        $insurance = ['آزاد','تامین اجتماعی','نیروهای مسلح','خدمات درمانی',];
         $int = array_rand($insurance);
 
         return [
             'title' => "بیمه " . $insurance[$int],
             'description' => $faker->realText,
         ];
+    }
+
+    /**
+     * Create entries for each insurance type.
+     *
+     * @return void
+     */
+    public static function createAll()
+    {
+        $insurances = ['آزاد','تامین اجتماعی','نیروهای مسلح','خدمات درمانی', 'تکمیلی'];
+
+        foreach ($insurances as $insurance) {
+            Insurance::factory()->create([
+                'title' => "بیمه " . $insurance,
+                'description' => FakerFactory::create('fa_IR')->realText,
+            ]);
+        }
     }
 }
