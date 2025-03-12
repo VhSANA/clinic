@@ -19,7 +19,12 @@
                         <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-lg font-semibold">انتخاب بیمار</h2>
-                                <button id="close-patients-table" class="text-gray-500 hover:text-gray-700">X</button>
+                                <button id="close-patients-table" type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                    </svg>
+                                    <span class="sr-only close">Close modal</span>
+                                </button>
                             </div>
                             <!-- Search Box -->
                             <div class="relative w-1/2">
@@ -91,6 +96,9 @@
     const personnels = @json($personnels);
     const services = @json($services);
 
+    // validation errors
+    const reservationValidationError = @json(session('reservation_validation'));
+
     // global variables
     const currentMonthAndYear = document.getElementById('current-month-year');
 
@@ -99,23 +107,6 @@
     let jalaliDate = jalaali.toJalaali(currentDate.getFullYear(), currentDate.getMonth() + 1, currentDate.getDate());
     const todayDate = jalaali.toJalaali(currentDate.getFullYear(), currentDate.getMonth() + 1, currentDate.getDate());
 
-    function getWeekRange(date) {
-        const day = date.getDay(); // 0 (Sunday) to 6 (Saturday)
-        const startOfWeek = new Date(date);
-        startOfWeek.setDate(date.getDate() - day + (day === 6 ? 0 : -day - 1)); // Adjust to Saturday
-        startOfWeek.setHours(0, 0, 0, 0); // Start of the day
-
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6); // Add 6 days to reach Friday
-        endOfWeek.setHours(23, 59, 59, 999); // End of the day
-
-        return { startOfWeek, endOfWeek };
-    }
-
-    function formatJalaliDate(date) {
-        const jalaliDate = jalaali.toJalaali(date.getFullYear(), date.getMonth() + 1, date.getDate());
-        return `${jalaliDate.jd}/${getPersianMonthsOfYear(jalaliDate.jm)}/${jalaliDate.jy}`;
-    }
     // search patient by national code
     const searchPatients = document.getElementById('search-patient-code');
     const searchPatientsBtn = document.getElementById('search-patient-code-btn');
@@ -328,9 +319,6 @@
 
     // generate appointment html
     function displaySelectedPatinet(patient) {
-        // let startOfDisplayedWeek = `${jalaali.toJalaali(getWeekRange(currentDate).startOfWeek.getFullYear(), getWeekRange(currentDate).startOfWeek.getMonth() + 1, getWeekRange(currentDate).startOfWeek.getDate()).jd}/${getPersianMonthsOfYear(jalaali.toJalaali(getWeekRange(currentDate).startOfWeek.getFullYear(), getWeekRange(currentDate).startOfWeek.getMonth() + 1, getWeekRange(currentDate).startOfWeek.getDate()).jm)}/${jalaali.toJalaali(getWeekRange(currentDate).startOfWeek.getFullYear(), getWeekRange(currentDate).startOfWeek.getMonth() + 1, getWeekRange(currentDate).startOfWeek.getDate()).jy}`;
-        // let endOfDisplayedWeek = `${jalaali.toJalaali(getWeekRange(currentDate).endOfWeek.getFullYear(), getWeekRange(currentDate).endOfWeek.getMonth() + 1, getWeekRange(currentDate).endOfWeek.getDate()).jd}/${getPersianMonthsOfYear(jalaali.toJalaali(getWeekRange(currentDate).endOfWeek.getFullYear(), getWeekRange(currentDate).endOfWeek.getMonth() + 1, getWeekRange(currentDate).endOfWeek.getDate()).jm)}/${jalaali.toJalaali(getWeekRange(currentDate).endOfWeek.getFullYear(), getWeekRange(currentDate).endOfWeek.getMonth() + 1, getWeekRange(currentDate).endOfWeek.getDate()).jy}`;
-
         appointmentSectionForSelectedPatient.innerHTML = `<form action="{{ route('appointments.store') }}" method="post" class="flex flex-col justify-between gap-7">
                 @csrf
                 <div class="flex justify-between gap-7">
@@ -361,7 +349,7 @@
                         <!-- معرف -->
                         <div class="relative">
                             <x-app.input.all-inputs name="introducer_id" type="select" label="پزشک معرف" initial=" ">
-                                ${generateAllPersonnels(personnels)}
+
                             </x-app.input.all-inputs>
                             <button type="button" class="absolute hidden left-7 bottom-1 mb-1 bg-transparent text-red-600 font-bold px-2 py-1 rounded" id="clear-introducer">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5">
@@ -392,7 +380,9 @@
                                     </div>
 
                                     <!-- today btn -->
-                                    <div id="all-shifts-side-today" class="flex justify-center items-center text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-3 py-2  dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800 transition cursor-pointer">امروز</div>
+                                    <div class="flex gap-2">
+                                        <div id="all-shifts-side-today" class="flex justify-center items-center text-white bg-green-700 mb-2 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-3  dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800 transition cursor-pointer">امروز</div>
+                                    </div>
                                 </div>
                                 <table class="table-auto w-full border-t p-4 mt-1 text-sm text-left rtl:text-center text-gray-800 dark:text-gray-400 rounded-lg overflow-hidden">
                                     <thead class="text-xs text-white uppercase bg-gray-800 dark:bg-gray-200 dark:text-gray-400 rounded-t-lg">
@@ -416,46 +406,88 @@
                     <button type="button" class="rounded-full  bg-red-600 dark:bg-red-800 text-white dark:text-white antialiased font-bold hover:bg-red-800 dark:hover:bg-red-900 px-4 py-2 flex items-center justify-between transition"><P class="ml-3">انصراف</p> <x-cancel-icon /></button>
                 </div>
             </form>`;
-            const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
-            document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek);
-        document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek);
-        document.getElementById('prev-week').addEventListener('click', function () {
+
+        // variables
+        const allShiftsSection = document.getElementById('all-shifts-side');
+        const shiftsSectionMainTitle = document.getElementById('left-side-title');
+        const allShiftsTable = document.getElementById('all-shifts-table');
+        const allShiftsDetails = document.getElementById('all-shifts-details');
+
+    // routing between weeks
+        // current values of start and end of week variables
+        const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
+        // show current value of startOfWeek and endOfWeek
+        document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek, true);
+        document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek, false);
+
+        // route to previous week
+        document.getElementById('prev-week').addEventListener('click', function (e) {
+            e.preventDefault();
+            // lower value of startOfWeek 7 numbers and set to getWeekRange
             currentDate.setDate(currentDate.getDate() - 7);
             const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
-            document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek);
-            document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek);
+
+            // show new updated values
+            document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek, true);
+            document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek, false);
+
+            // get current personnel and service values
+            const personnelId = document.querySelector('select[name="personnel_id"]').value;
+            const serviceId = document.querySelector('select[name="service_id"]').value;
+
+            // render previous week
+            renderSchedulesForSelectedWeek(personnelId, serviceId, startOfWeek, endOfWeek);
         });
 
-        document.getElementById('next-week').addEventListener('click', function () {
+        // show current week
+        document.getElementById('all-shifts-side-today').addEventListener('click', function (e) {
+            e.preventDefault();
+            // get date now value to getWeekRange
+            currentDate = new Date();
+            const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
+
+            // show new updated values
+            document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek, true);
+            document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek, false);
+
+            // get current personnel and service values
+            const personnelId = document.querySelector('select[name="personnel_id"]').value;
+            const serviceId = document.querySelector('select[name="service_id"]').value;
+
+            // render previous week
+            renderSchedulesForSelectedWeek(personnelId, serviceId, startOfWeek, endOfWeek);
+        });
+
+        // route to next week
+        document.getElementById('next-week').addEventListener('click', function (e) {
+            e.preventDefault();
+            // lower value of startOfWeek 7 numbers and set to getWeekRange
             currentDate.setDate(currentDate.getDate() + 7);
             const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
-            document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek);
-            document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek);
+
+            // show new updated values
+            document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek, true);
+            document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek, false);
+
+            // get current personnel and service values
+            const personnelId = document.querySelector('select[name="personnel_id"]').value;
+            const serviceId = document.querySelector('select[name="service_id"]').value;
+
+            // render previous week
+            renderSchedulesForSelectedWeek(personnelId, serviceId, startOfWeek, endOfWeek);
         });
 
         // Event listener for service selection
         document.querySelector('select[name="service_id"]').addEventListener('change', function() {
             const selectedServiceId = this.value;
             const selectedService = services.find(service => service.id == selectedServiceId);
+
             // Generate personnels based on selected service
             generatePersonnels(selectedService);
         });
 
-        // Clear introducer button
-        const clearIntroducerBtn = document.getElementById('clear-introducer');
-        const introducerSelect = document.querySelector('select[name="introducer_id"]');
-        clearIntroducerBtn.addEventListener('click', () => {
-            introducerSelect.value = '';
-            clearIntroducerBtn.classList.add('hidden');
-        });
-        // Show clear button when an introducer is selected
-        introducerSelect.addEventListener('change', () => {
-            if (introducerSelect.value) {
-                clearIntroducerBtn.classList.remove('hidden');
-            } else {
-                clearIntroducerBtn.classList.add('hidden');
-            }
-        });
+        // generate mini calendar
+        miniCalendarModal();
     }
     // create medical services select box
     function generateMedicalServices(services) {
@@ -492,18 +524,44 @@
     }
 
     // create introducers select box
-    function generateAllPersonnels(personnels) {
-        let options;
+    function generateAllPersonnels(selectedPersonnelId) {
+        const introducerSelect = document.querySelector('select[name="introducer_id"]');
+        let options = `<option value="">بدون معرف</option>`;
 
+        // create select box options without selected personnel
         personnels.forEach(personnel => {
-            options += `<option value="${personnel.id}">${personnel.full_name}</option>`;
+            if (selectedPersonnelId != personnel.id) {
+                options += `<option value="${personnel.id}">${personnel.full_name}</option>`;
+            }
         });
 
-        return options;
+        // add options to select box
+        introducerSelect.innerHTML = options;
+
+        // Clear introducer button
+        const clearIntroducerBtn = document.getElementById('clear-introducer');
+        clearIntroducerBtn.addEventListener('click', () => {
+            introducerSelect.value = '';
+            clearIntroducerBtn.classList.add('hidden');
+        });
+        // Show clear button when an introducer is selected
+        introducerSelect.addEventListener('change', () => {
+            if (introducerSelect.value) {
+                clearIntroducerBtn.classList.remove('hidden');
+            } else {
+                clearIntroducerBtn.classList.add('hidden');
+            }
+        });
+
+        // Show clear button if an introducer is already selected
+        if (introducerSelect.value) {
+            clearIntroducerBtn.classList.remove('hidden');
+        }
     }
 
-// generate appoinment section
 
+
+// generate appoinment section
     // Get personnel_id value
     document.addEventListener('change', function (event) {
         // variables
@@ -520,242 +578,326 @@
                         جهت نمایش لیست نوبتها، پرسنل مورد نظر را انتخاب نمایید.
                     </td>
                 </tr>`;
+
+            // hide these items if service_id is being changed
+            document.querySelectorAll('[id^="single-shift-"]').forEach(item => item.classList.add('hidden'));
+            document.getElementById('submit-btns').classList.add('hidden');
         }
 
         if (event.target && event.target.name === 'personnel_id') {
+            // hide these items if service_id is being changed
+            document.querySelectorAll('[id^="single-shift-"]').forEach(item => item.classList.add('hidden'));
+            document.getElementById('submit-btns').classList.add('hidden');
+
             const selectedServiceId = document.querySelector('select[name="service_id"]').value;
-            const personnelSelect = event.target;
-            const personnelId = personnelSelect.value;
+            const personnelId = event.target.value;
             const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
 
             // remove all shifts side hidden attribute
             allShiftsSection.classList.remove('hidden');
             // remove title
             shiftsSectionMainTitle.innerHTML = 'نوبت مورد نظر را انتخاب کنید.';
-            // remove previous rows
-            allShiftsDetails.innerHTML = '';
 
-            // Filter schedules within the current week and slected personnel and service
-            const filteredSchedules = schedules.filter((schedule) => {
-                const scheduleDate = new Date(schedule.calendar.date);
-                if (schedule.personnel.id == personnelId && schedule.service.id == selectedServiceId) {
-                    return scheduleDate.getTime() >= startOfWeek.getTime() && scheduleDate.getTime() <= endOfWeek.getTime();
-                }
-            });
+            // render schedules and time reservations for selected week
+            renderSchedulesForSelectedWeek(personnelId, selectedServiceId, startOfWeek, endOfWeek);
 
-            if (filteredSchedules.length > 0) {
-                // show filtered schedules
-                filteredSchedules.forEach((schedule, index) => {
-                    const row = document.createElement('tr');
-                    const identifier = `shift-${schedule.id}`;
-                    const gregorianDate = new Date(schedule.calendar.date);
-                    const jalaliDate = jalaali.toJalaali(gregorianDate.getFullYear(), gregorianDate.getMonth() + 1, gregorianDate.getDate());
-                    const fromDateTimeValue = `${schedule.from_date.split(' ')[1].split(':')[0]}:${schedule.from_date.split(' ')[1].split(':')[1]}`;
-                    const toDateTimeValue = `${schedule.to_date.split(' ')[1].split(':')[0]}:${schedule.to_date.split(' ')[1].split(':')[1]}`;
+            // remove selected personnel from introducers
+            const selectedPersonnelId = document.querySelector('select[name="personnel_id"]').value;
+            generateAllPersonnels(selectedPersonnelId);
+        }
+    });
 
-                    // create a table row
-                    row.classList.add('group', 'cursor-pointer');
-                    row.setAttribute('id', identifier);
-                    row.innerHTML = `
-                        <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${index + 1}</td>
-                        <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${getPersianDaysOfWeak(gregorianDate.getDay())} ${jalaliDate.jd} ${getPersianMonthsOfYear(jalaliDate.jm)}</td>
-                        <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition "><div class="flex flex-col justify-center items-center"><p>از ساعت: <strong>${fromDateTimeValue}</strong></p><p>تا ساعت: <strong>${toDateTimeValue}</strong></p></div></td>
-                        <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${schedule.room.title}</td>
+    // valdation errors section
+    if (reservationValidationError) {
+        // display previously selected patient
+        const selectedPatient = patients.find(patient => patient.id == reservationValidationError['patient']);
+
+        if (selectedPatient == undefined) {
+            document.getElementById('initial-title').innerText = 'موردی یافت نشد.';
+        } else {
+            displaySelectedPatinet(selectedPatient);
+        }
+
+        const oldValues = @json(old());
+
+        // set old values
+        if (oldValues) {
+            const appointmentType = 'appointment_type';
+            const description = 'description';
+
+            if (oldValues[appointmentType]) {
+                document.querySelector(`[name="${appointmentType}"]`).value = oldValues[appointmentType];
+            }
+            if (oldValues[description]) {
+                document.querySelector(`[name="${description}"]`).value = oldValues[description];
+            }
+        }
+    }
+
+    // helper functions
+    function renderSchedulesForSelectedWeek(personnelId, serviceId, startOfWeek, endOfWeek) {
+        // variables
+        const allShiftsSection = document.getElementById('all-shifts-side');
+        const shiftsSectionMainTitle = document.getElementById('left-side-title');
+        const allShiftsTable = document.getElementById('all-shifts-table');
+        const allShiftsDetails = document.getElementById('all-shifts-details');
+
+        // clear current schedules
+        allShiftsDetails.innerHTML = '';
+
+        // Filter schedules within the current week and selected personnel and service
+        const filteredSchedules = schedules.filter((schedule) => {
+            const scheduleDate = new Date(schedule.calendar.date);
+            return schedule.personnel.id == personnelId && schedule.service.id == serviceId &&
+                scheduleDate.getTime() >= startOfWeek.getTime() && scheduleDate.getTime() <= endOfWeek.getTime();
+        });
+
+        if (filteredSchedules.length > 0) {
+            // show filtered schedules
+            filteredSchedules.forEach((schedule, index) => {
+                const row = document.createElement('tr');
+                const identifier = `shift-${schedule.id}`;
+                const gregorianDate = new Date(schedule.calendar.date);
+                const jalaliDate = jalaali.toJalaali(gregorianDate.getFullYear(), gregorianDate.getMonth() + 1, gregorianDate.getDate());
+                const fromDateTimeValue = `${schedule.from_date.split(' ')[1].split(':')[0]}:${schedule.from_date.split(' ')[1].split(':')[1]}`;
+                const toDateTimeValue = `${schedule.to_date.split(' ')[1].split(':')[0]}:${schedule.to_date.split(' ')[1].split(':')[1]}`;
+
+                // create a table row
+                row.classList.add('group', 'cursor-pointer');
+                row.setAttribute('id', identifier);
+                row.innerHTML = `
+                    <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${index + 1}</td>
+                    <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${getPersianDaysOfWeak(gregorianDate.getDay())} ${jalaliDate.jd} ${getPersianMonthsOfYear(jalaliDate.jm)}</td>
+                    <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition"><div class="flex flex-col justify-center items-center"><p>از ساعت: <strong>${fromDateTimeValue}</strong></p><p>تا ساعت: <strong>${toDateTimeValue}</strong></p></div></td>
+                    <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${schedule.room.title}</td>
+                `;
+
+                // add to table
+                allShiftsDetails.appendChild(row);
+                allShiftsTable.classList.remove('hidden');
+
+                // show every shifts time details
+                const selectedShift = document.getElementById(identifier);
+                selectedShift.addEventListener('click', function () {
+                    // create new section to demonstrate divided visit times of a single shift
+                    const reservationSection = document.createElement('div');
+                    const reservationTable = document.createElement('table');
+                    const backToAllShiftBtn = document.createElement('button');
+                    const showDividedTimes = document.createElement('div');
+                    const formSubmit = document.getElementById('submit-btns');
+
+
+                    // hide all-shifts-table
+                    allShiftsTable.classList.add('hidden');
+                    // toggle title
+                    shiftsSectionMainTitle.innerText = 'زمان مورد نظر را انتخاب کنید.';
+
+                    // add id to reservationSection
+                    reservationSection.setAttribute('id', `single-shift-${schedule.id}`);
+
+                    // create a button to toggle between shifts table and times table
+                    backToAllShiftBtn.innerHTML = `<button class="bg-blue-500 text-white px-4 py-2 rounded-lg my-4" id="toggle-${schedule.id}">شیفت ها</button>`;
+                    reservationSection.appendChild(backToAllShiftBtn);
+
+                    // add toggle functionality to back to all shifts button
+                    backToAllShiftBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        allShiftsTable.classList.remove('hidden');
+                        reservationSection.innerHTML = '';
+                        formSubmit.classList.add('hidden');
+                    });
+
+                    // toggle reservationSection if user clicks on cancel button
+                    formSubmit.lastElementChild.addEventListener('click', function () {
+                        allShiftsTable.classList.remove('hidden');
+                        reservationSection.classList.add('hidden');
+                        formSubmit.classList.add('hidden');
+                    });
+
+                    reservationSection.classList.remove('hidden');
+                    reservationTable.classList.add('table-auto', 'w-full', 'border-t', 'p-4', 'mt-1', 'text-sm', 'text-left', 'rtl:text-center', 'text-gray-800', 'dark:text-gray-400', 'rounded-lg', 'overflow-hidden');
+                    reservationSection.appendChild(reservationTable);
+                    const timeDetailsId = `time-details-${schedule.id}`;
+
+                    reservationTable.innerHTML = `
+                        <thead>
+                            <tr class="bg-gray-600">
+                                <th class="text-center py-3 border border-gray-300 font-medium text-white">روز و تاریخ</th>
+                                <th class="text-center py-3 border border-gray-300 font-medium text-white">ساعات ویزیت</th>
+                                <th class="text-center py-3 border border-gray-300 font-medium text-white">اتاق</th>
+                            </tr>
+                        </thead>
+                        <tbody id="${timeDetailsId}">
+                            <tr>
+                                <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${getPersianDaysOfWeak(gregorianDate.getDay())} ${jalaliDate.jd} ${getPersianMonthsOfYear(jalaliDate.jm)}</td>
+                                <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition"><div class="flex flex-col justify-center items-center"><p>از ساعت: <strong>${fromDateTimeValue}</strong></p><p>تا ساعت: <strong>${toDateTimeValue}</strong></p></div></td>
+                                <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${schedule.room.title}</td>
+                            </tr>
+                        </tbody>
                     `;
 
-                    // add to table
-                    allShiftsDetails.appendChild(row);
-                    allShiftsTable.classList.remove('hidden');
+                    allShiftsSection.appendChild(reservationSection);
 
+                    services.filter((service) => {
+                        service.personnels.filter(personnel => {
+                            const fromTime = schedule.from_date.split(' ')[1].split(':').map(Number);
+                            const toTime = schedule.to_date.split(' ')[1].split(':').map(Number);
+                            const fromMinutes = fromTime[0] * 60 + fromTime[1];
+                            const toMinutes = toTime[0] * 60 + toTime[1];
+                            const estimatedTime = parseInt(personnel.pivot.estimated_service_time);
 
+                            if ((personnel.id == personnelId) && (service.id == serviceId)) {
+                                const numberOfBadges = (toMinutes - fromMinutes) / estimatedTime;
 
-                    // show every shifts time details
-                    const selectedShift = document.getElementById(identifier);
-                    selectedShift.addEventListener('click', function () {
-                        // creat new section to demonstrate devided visit times of a single shift
-                        const reservationSection = document.createElement('div');
-                        const reservationTable = document.createElement('table');
-                        const backToAllShiftBtn = document.createElement('button');
-                        const showDevidedTimes = document.createElement('div');
-                        const formSubmit = document.getElementById('submit-btns');
+                                // select one, deselect others
+                                let selectedBadge = null;
 
-                        // hide all-shifts-table
-                        allShiftsTable.classList.add('hidden');
-                        // toggle title
-                        shiftsSectionMainTitle.innerText = 'زمان مورد نظر را انتخاب کنید.';
+                                // add showDividedTimes to table and reset previous one
+                                showDividedTimes.innerHTML = '';
+                                reservationSection.appendChild(showDividedTimes);
+                                showDividedTimes.classList.add('grid', 'grid-cols-3', 'gap-5', 'w-full', 'mt-4');
 
-                        // create a button to toggle betweem shifts table and times table
-                        backToAllShiftBtn.innerHTML = `<button class="bg-blue-500 text-white px-4 py-2 rounded-lg my-4" id="toggle-${schedule.id}">شیفت ها</button>`;
-                        reservationSection.appendChild(backToAllShiftBtn);
+                                // create time badges
+                                for (let i = 0; i <= numberOfBadges; i++) {
+                                    const time = document.createElement('div');
+                                    time.classList.add('flex', 'justify-center', 'items-center', 'group');
 
-                        // add toggle functionality
-                        backToAllShiftBtn.addEventListener('click', function (e) {
-                            e.preventDefault();
-                            allShiftsTable.classList.remove('hidden');
-                            reservationSection.classList.add('hidden');
-                        });
+                                    // last time
+                                    const lastTimeValue = fromMinutes + (estimatedTime * i);
 
-                        reservationSection.classList.remove('hidden');
-                        reservationTable.classList.add('table-auto', 'w-full', 'border-t', 'p-4', 'mt-1', 'text-sm', 'text-left', 'rtl:text-center', 'text-gray-800', 'dark:text-gray-400', 'rounded-lg', 'overflow-hidden');
-                        reservationSection.appendChild(reservationTable);
-                        const timeDetailsId = `time-details-${schedule.id}`;
+                                    // convert last time value to hours and minutes
+                                    function convertToTime(value) {
+                                        const hours = Math.floor(value / 60);
+                                        const minutes = value % 60;
 
-                        reservationTable.innerHTML = `
-                            <thead>
-                                <tr class="bg-gray-600">
-                                    <th class="text-center py-3 border border-gray-300 font-medium text-white">روز و تاریخ</th>
-                                    <th class="text-center py-3 border border-gray-300 font-medium text-white">ساعات ویزیت</th>
-                                    <th class="text-center py-3 border border-gray-300 font-medium text-white">اتاق</th>
-                                </tr>
-                            </thead>
-                            <tbody id="${timeDetailsId}" >
-                                <tr>
-                                    <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${getPersianDaysOfWeak(gregorianDate.getDay())} ${jalaliDate.jd} ${getPersianMonthsOfYear(jalaliDate.jm)}</td>
-                                    <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition "><div class="flex flex-col justify-center items-center"><p>از ساعت: <strong>${fromDateTimeValue}</strong></p><p>تا ساعت: <strong>${toDateTimeValue}</strong></p></div></td>
-                                    <td class="border border-gray-300 p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${schedule.room.title}</td>
-                                </tr>
-                            </tbody>
-                        `;
-
-                        allShiftsSection.appendChild(reservationSection);
-
-                        services.filter((service) => {
-                            service.personnels.filter(personnel => {
-                                const fromTime = schedule.from_date.split(' ')[1].split(':').map(Number);
-                                const toTime = schedule.to_date.split(' ')[1].split(':').map(Number);
-                                const fromMinutes = fromTime[0] * 60 + fromTime[1];
-                                const toMinutes = toTime[0] * 60 + toTime[1];
-                                const estimatedTime = parseInt(personnel.pivot.estimated_service_time);
-
-                                if ((personnel.id == personnelId) && (service.id == selectedServiceId)) {
-                                    const numberOfBadges = (toMinutes - fromMinutes) / estimatedTime;
-
-                                    // select one, deselect others
-                                    let selectedBadge = null;
-
-                                    // add showDevidedTimes to table and reset previous one
-                                    showDevidedTimes.innerHTML = '';
-                                    reservationSection.appendChild(showDevidedTimes);
-                                    showDevidedTimes.classList.add('grid', 'grid-cols-3', 'gap-5', 'w-full', 'mt-4');
-
-                                    // create time badges
-                                    for (let i = 0; i <= numberOfBadges; i++) {
-                                        const time = document.createElement('div');
-                                        time.classList.add('flex', 'justify-center', 'items-center', 'group');
-
-                                        // last time
-                                        const lastTimeValue = fromMinutes + (estimatedTime * i);
-
-                                        // convert last time value to hours and minutes
-                                        function convertToTime(value) {
-                                            const hours = Math.floor(value / 60);
-                                            const minutes = value % 60;
-
-                                            return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-                                        }
-
-                                        const lastTime = convertToTime(lastTimeValue);
-
-                                        // create badges
-                                        time.innerHTML = `
-                                            <span class="cursor-pointer time-badge bg-gray-100 text-gray-800 text-md font-medium inline-flex items-center py-2 px-3 flex gap-2 rounded-sm me-2 dark:bg-gray-700 dark:text-gray-400 border border-gray-500 group-hover:bg-gray-400 group-hover:text-gray-200 transition rounded-xl" id="time_${schedule.id}_${i}">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                </svg>
-                                                ${lastTime}
-                                            </span>
-                                        `;
-
-
-                                        (function (currentTime, badgeId) {
-                                            const badge = time.querySelector('.time-badge');
-                                            badge.addEventListener('click', function(e) {
-                                                // Deselect previous badge
-                                                if (selectedBadge && selectedBadge !== badge) {
-                                                    selectedBadge.innerHTML = `
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                            </svg>
-                                                            ${selectedBadge.innerText}
-                                                    `;
-                                                    selectedBadge.classList.remove('bg-gray-600', 'text-white');
-                                                    selectedBadge.classList.add('bg-gray-100', 'text-gray-800');
-                                                }
-
-                                                // Toggle current badge
-                                                const isSelected = badge.classList.contains('bg-gray-100');
-
-                                                if (isSelected) {
-                                                    badge.innerHTML = `
-                                                        <input type="hidden" name="time_${schedule.id}" value="${currentTime}">
-                                                        <input type="hidden" name="schedule_id" value="${schedule.id}">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                                                        </svg>
-                                                        ${currentTime}
-                                                    `;
-                                                    badge.classList.add('bg-gray-600', 'text-white');
-                                                    badge.classList.remove('bg-gray-100', 'text-gray-800');
-                                                    selectedBadge = badge;
-
-                                                    // display submit btns
-                                                    formSubmit.classList.add('flex');
-                                                    formSubmit.classList.remove('hidden');
-                                                } else {
-                                                    badge.innerHTML = `
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                            </svg>
-                                                            ${currentTime}
-                                                        `;
-                                                        badge.classList.remove('bg-gray-600', 'text-white');
-                                                        badge.classList.add('bg-gray-100', 'text-gray-800');
-                                                        selectedBadge = null;
-
-                                                        // display submit btns
-                                                        formSubmit.classList.remove('flex');
-                                                        formSubmit.classList.add('hidden');
-                                                    }
-                                                });
-
-                                                // activate time badges if is added to appointment
-                                                appointments.filter(appointment => {
-                                                    const timeFromDB = appointment.estimated_service_time.split(' ')[1];
-                                                    const reservedTimeValue = `${currentTime}:00`;
-
-                                                    if ((timeFromDB == reservedTimeValue) && (schedule.id == appointment.schedule_id)) {
-                                                        badge.innerHTML = `
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                                                            </svg>
-                                                            ${currentTime}
-                                                        `;
-                                                        badge.disabled = true;
-                                                        badge.classList.add('bg-red-800', 'text-white', 'pointer-events-none', 'opacity-50');
-                                                        badge.classList.remove('bg-gray-100', 'text-gray-800', 'group-hover:bg-gray-400', 'group-hover:text-gray-200', 'transition');
-                                                    }
-                                                })
-                                        })(lastTime, `time_${schedule.id}_${i}`);
-
-                                        showDevidedTimes.appendChild(time);
+                                        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
                                     }
+
+                                    const lastTime = convertToTime(lastTimeValue);
+
+                                    // create badges
+                                    time.innerHTML = `
+                                        <span class="cursor-pointer time-badge bg-gray-100 text-gray-800 text-md font-medium inline-flex items-center py-2 px-3 flex gap-2 rounded-sm me-2 dark:bg-gray-700 dark:text-gray-400 border border-gray-500 group-hover:bg-gray-400 group-hover:text-gray-200 transition rounded-xl" id="time_${schedule.id}_${i}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                            </svg>
+                                            ${lastTime}
+                                        </span>
+                                    `;
+
+                                    (function (currentTime, badgeId) {
+                                        const badge = time.querySelector('.time-badge');
+                                        badge.addEventListener('click', function(e) {
+                                            // Deselect previous badge
+                                            if (selectedBadge && selectedBadge !== badge) {
+                                                selectedBadge.innerHTML = `
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                    </svg>
+                                                    ${selectedBadge.innerText}
+                                                `;
+                                                selectedBadge.classList.remove('bg-gray-600', 'text-white');
+                                                selectedBadge.classList.add('bg-gray-100', 'text-gray-800');
+
+                                                // Remove hidden inputs for the previously selected time
+                                                if (document.querySelector(`input[name="time_${schedule.id}"]`) &&
+                                                document.querySelector(`input[name="schedule_id"]`)) {
+                                                    document.querySelector(`input[name="time_${schedule.id}"]`).remove();
+                                                    document.querySelector(`input[name="schedule_id"]`).remove();
+                                                }
+                                            }
+
+                                            // Toggle current badge
+                                            const isSelected = badge.classList.contains('bg-gray-100');
+
+                                            if (isSelected) {
+                                                badge.innerHTML = `
+                                                    <input type="hidden" name="time_${schedule.id}" value="${currentTime}">
+                                                    <input type="hidden" name="schedule_id" value="${schedule.id}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                                    </svg>
+                                                    ${currentTime}
+                                                `;
+                                                badge.classList.add('bg-gray-600', 'text-white');
+                                                badge.classList.remove('bg-gray-100', 'text-gray-800');
+                                                selectedBadge = badge;
+
+                                                // display submit btns
+                                                formSubmit.classList.add('flex');
+                                                formSubmit.classList.remove('hidden');
+                                            } else {
+                                                badge.innerHTML = `
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                    </svg>
+                                                    ${currentTime}
+                                                `;
+                                                badge.classList.remove('bg-gray-600', 'text-white');
+                                                badge.classList.add('bg-gray-100', 'text-gray-800');
+                                                selectedBadge = null;
+
+                                                // display submit btns
+                                                formSubmit.classList.remove('flex');
+                                                formSubmit.classList.add('hidden');
+                                            }
+                                        });
+
+                                        // activate time badges if is added to appointment
+                                        appointments.filter(appointment => {
+                                            const timeFromDB = appointment.estimated_service_time.split(' ')[1];
+                                            const reservedTimeValue = `${currentTime}:00`;
+
+                                            if ((timeFromDB == reservedTimeValue) && (schedule.id == appointment.schedule_id)) {
+                                                badge.innerHTML = `
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                                    </svg>
+                                                    ${currentTime}
+                                                `;
+                                                badge.disabled = true;
+                                                badge.classList.add('bg-red-800', 'text-white', 'pointer-events-none', 'opacity-50');
+                                                badge.classList.remove('bg-gray-100', 'text-gray-800', 'group-hover:bg-gray-400', 'group-hover:text-gray-200', 'transition');
+                                            }
+                                        });
+                                    })(lastTime, `time_${schedule.id}_${i}`);
+
+                                    showDividedTimes.appendChild(time);
                                 }
-                            });
+                            }
                         });
                     });
                 });
-            } else {
-                allShiftsDetails.innerHTML = `<tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
-                    <td colspan="8" class="px-6 py-4">
-                        موردی یافت نشد.
-                    </td>
-                </tr>`;
+            });
+        } else {
+            // if all shifts table contains hidden remove it to display shifts table for filtered personnel and service
+            if (allShiftsTable.classList.contains('hidden')) {
+                allShiftsTable.classList.remove('hidden');
             }
 
-            // generate mini calendar
-            miniCalendarModal();
+            allShiftsDetails.innerHTML = `<tr class="bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 rounded-b-lg">
+                <td colspan="8" class="px-6 py-4">
+                    موردی یافت نشد.
+                </td>
+            </tr>`;
         }
-    });
+    }
+    function getWeekRange(date) {
+        const day = (date.getDay() + 1) % 7;
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - day); // Adjust to Saturday
+        startOfWeek.setHours(0, 0, 0, 0); // Start of the day
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6); // Add 6 days to reach Friday
+        endOfWeek.setHours(23, 59, 59, 999); // End of the day
+
+        return { startOfWeek, endOfWeek };
+    }
+    function formatJalaliDate(date, status) {
+        const jalaliDate = jalaali.toJalaali(date.getFullYear(), date.getMonth() + 1, date.getDate());
+        return `${status ? 'از' : 'تا'} ${jalaliDate.jd}/${getPersianMonthsOfYear(jalaliDate.jm)}/${jalaliDate.jy}`;
+    }
 
     // mini calendar
     function miniCalendarModal () {
@@ -764,7 +906,12 @@
                 <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-lg font-semibold">انتخاب تاریخ</h2>
-                        <button id="close-mini-calendar" class="text-gray-500 hover:text-gray-700">X</button>
+                        <button id="close-mini-calendar" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" type="button">
+                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                            </svg>
+                            <span class="sr-only close">Close modal</span>
+                        </button>
                     </div>
                     <!-- Search Box -->
                     <input id="search-date" type="text" placeholder="تاریخ مورد نظر را وارد نمایید. (برای مثال: 1-1-1404)" class="w-full p-2 border rounded mb-4 text-right">
@@ -779,7 +926,7 @@
                                 <x-app.button.left-arrow ></x-app.button.left-arrow>
                             </div>
                         </div>
-                        <div id="today-mini" class="flex justify-between items-center gap-2 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-3  mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800 transition cursor-pointer">امروز</div>
+                        <div id="today-minicalendar" class="flex justify-between items-center gap-2 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-3  mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800 transition cursor-pointer">امروز</div>
                     </div>
                     <!-- Mini Jalali Calendar -->
                     <div id="mini-calendar-body" class="border rounded p-2">
@@ -812,7 +959,7 @@
         const searchInput = document.getElementById('search-date');
         const miniCalendarElement = document.getElementById('mini-calendar-table-body');
         const miniCalendarHead = document.getElementById('mini-calendar-head');
-        const todayMini = document.getElementById('today-mini');
+        const todayMini = document.getElementById('today-minicalendar');
 
         function generateMiniCalendar(jalaliYear, jalaliMonth) {
             const gregorianFirstDay = jalaali.toGregorian(jalaliYear, jalaliMonth, 1);
@@ -833,6 +980,7 @@
             let dateCounter = 1;
             let rows = '';
 
+            // display calednar
             for (let i = 0; i < 6; i++) {
                 let row = '<tr>';
                 for (let j = 0; j < 7; j++) {
@@ -862,97 +1010,43 @@
             document.getElementById('current-month-mini').innerText = `${getPersianMonthsOfYear(jalaliMonth)} ${jalaliYear}`;
         }
 
+        // open mini calendar modal
         openMiniCalendarModalBtn.addEventListener('click', (e) => {
             e.preventDefault();
             miniCalendarModal.classList.remove('hidden');
             generateMiniCalendar(jalaliDate.jy, jalaliDate.jm);
         });
 
+        // close mini calendar modal
         closeMiniCalendarModalBtn.addEventListener('click', (e) => {
             e.preventDefault();
             miniCalendarModal.classList.add('hidden');
         });
 
+        // searching a specific date method
         searchInput.addEventListener('change', (event) => {
-            e.preventDefault();
-
             const selectedDate = event.target.value.split('-');
             if (selectedDate.length === 3) {
                 const gregorianDate = jalaali.toGregorian(parseInt(selectedDate[0]), parseInt(selectedDate[1]), parseInt(selectedDate[2]));
                 currentDate = new Date(gregorianDate.gy, gregorianDate.gm - 1, gregorianDate.gd);
                 jalaliDate = jalaali.toJalaali(currentDate.getFullYear(), currentDate.getMonth() + 1, currentDate.getDate());
                 miniCalendarModal.classList.add('hidden');
+
+                // Update startOfWeek and endOfWeek to contain the selected date
+                const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
+                document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek, true);
+                document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek, false);
+
+                // get current personnel and service values
+                const personnelId = document.querySelector('select[name="personnel_id"]').value;
+                const serviceId = document.querySelector('select[name="service_id"]').value;
+
+                // render schedules for the selected week
+                renderSchedulesForSelectedWeek(personnelId, serviceId, startOfWeek, endOfWeek);
             }
         });
 
-        // route without refreshing through months in mini calendar
-        document.getElementById('prev-month-mini').addEventListener('click', function (e) {
-            e.preventDefault();
-            const currentView = document.getElementById('current-month-mini').getAttribute('data-view');
-            if (currentView === 'year') {
-                jalaliDate.jy--;
-                if (jalaliDate.jy < jalaali.toJalaali(new Date()).jy - 20) {
-                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy - 20;
-                }
-                miniCalendarElement.innerHTML = generateYearView(jalaliDate.jy);
-                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy}`;
-                miniCalendarHead.innerHTML = `<tr>
-                            <th colspan="8" class="p-2">ماه های ${jalaliDate.jy}</th>
-                        </tr>`;
-            } else if (currentView === 'decade') {
-                jalaliDate.jy -= 10;
-                if (jalaliDate.jy < jalaali.toJalaali(new Date()).jy - 20) {
-                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy - 20;
-                }
-                miniCalendarElement.innerHTML = generateDecadeView(jalaliDate.jy);
-                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy - 6} - ${jalaliDate.jy + 5}`;
-                miniCalendarHead.innerHTML = `<tr>
-                            <th colspan="8" class="p-2">دهه ${jalaliDate.jy - 6} الی ${jalaliDate.jy + 5}</th>
-                        </tr>`;
-            } else {
-                jalaliDate.jm--;
-                if (jalaliDate.jm < 1) {
-                    jalaliDate.jm = 12;
-                    jalaliDate.jy--;
-                }
-                generateMiniCalendar(jalaliDate.jy, jalaliDate.jm);
-            }
-        });
-
-        document.getElementById('next-month-mini').addEventListener('click', function (e) {
-            e.preventDefault();
-
-            const currentView = document.getElementById('current-month-mini').getAttribute('data-view');
-            if (currentView === 'year') {
-                jalaliDate.jy++;
-                if (jalaliDate.jy > jalaali.toJalaali(new Date()).jy + 20) {
-                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy + 20;
-                }
-                miniCalendarElement.innerHTML = generateYearView(jalaliDate.jy);
-                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy}`;
-                miniCalendarHead.innerHTML = `<tr>
-                            <th colspan="8" class="p-2">ماه های ${jalaliDate.jy}</th>
-                        </tr>`;
-            } else if (currentView === 'decade') {
-                jalaliDate.jy += 10;
-                if (jalaliDate.jy > jalaali.toJalaali(new Date()).jy + 20) {
-                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy + 20;
-                }
-                miniCalendarElement.innerHTML = generateDecadeView(jalaliDate.jy);
-                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy - 6} - ${jalaliDate.jy + 5}`;
-                miniCalendarHead.innerHTML = `<tr>
-                            <th colspan="8" class="p-2">دهه ${jalaliDate.jy - 6} الی ${jalaliDate.jy + 5}</th>
-                        </tr>`;
-            } else {
-                jalaliDate.jm++;
-                if (jalaliDate.jm > 12) {
-                    jalaliDate.jm = 1;
-                    jalaliDate.jy++;
-                }
-                generateMiniCalendar(jalaliDate.jy, jalaliDate.jm);
-            }
-        });
-
+        // button to toggle between monthes of year, years of decade
         document.getElementById('current-month-mini').addEventListener('click', function (e) {
             e.preventDefault();
 
@@ -987,6 +1081,86 @@
             }
         });
 
+        // route to previouse month without refreshing through months in mini calendar
+        document.getElementById('prev-month-mini').addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // route to previous years and show monthes of previous years
+            const currentView = document.getElementById('current-month-mini').getAttribute('data-view');
+            if (currentView === 'year') {
+                jalaliDate.jy--;
+                if (jalaliDate.jy < jalaali.toJalaali(new Date()).jy - 20) {
+                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy - 20;
+                }
+                miniCalendarElement.innerHTML = generateYearView(jalaliDate.jy);
+                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy}`;
+                miniCalendarHead.innerHTML = `<tr>
+                            <th colspan="8" class="p-2">ماه های ${jalaliDate.jy}</th>
+                        </tr>`;
+            } else
+            // route to previous decades
+            if (currentView === 'decade') {
+                jalaliDate.jy -= 10;
+                if (jalaliDate.jy < jalaali.toJalaali(new Date()).jy - 20) {
+                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy - 20;
+                }
+                miniCalendarElement.innerHTML = generateDecadeView(jalaliDate.jy);
+                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy - 6} - ${jalaliDate.jy + 5}`;
+                miniCalendarHead.innerHTML = `<tr>
+                            <th colspan="8" class="p-2">دهه ${jalaliDate.jy - 6} الی ${jalaliDate.jy + 5}</th>
+                        </tr>`;
+            } else
+            // route normally to previous monthes
+            {
+                jalaliDate.jm--;
+                if (jalaliDate.jm < 1) {
+                    jalaliDate.jm = 12;
+                    jalaliDate.jy--;
+                }
+                generateMiniCalendar(jalaliDate.jy, jalaliDate.jm);
+            }
+        });
+
+        // route to next month without refreshing
+        document.getElementById('next-month-mini').addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // route to next years and show monthes of previous years
+            const currentView = document.getElementById('current-month-mini').getAttribute('data-view');
+            if (currentView === 'year') {
+                jalaliDate.jy++;
+                if (jalaliDate.jy > jalaali.toJalaali(new Date()).jy + 20) {
+                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy + 20;
+                }
+                miniCalendarElement.innerHTML = generateYearView(jalaliDate.jy);
+                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy}`;
+                miniCalendarHead.innerHTML = `<tr>
+                            <th colspan="8" class="p-2">ماه های ${jalaliDate.jy}</th>
+                        </tr>`;
+            } else // route to previous decades
+            if (currentView === 'decade') {
+                jalaliDate.jy += 10;
+                if (jalaliDate.jy > jalaali.toJalaali(new Date()).jy + 20) {
+                    jalaliDate.jy = jalaali.toJalaali(new Date()).jy + 20;
+                }
+                miniCalendarElement.innerHTML = generateDecadeView(jalaliDate.jy);
+                document.getElementById('current-month-mini').innerText = `${jalaliDate.jy - 6} - ${jalaliDate.jy + 5}`;
+                miniCalendarHead.innerHTML = `<tr>
+                            <th colspan="8" class="p-2">دهه ${jalaliDate.jy - 6} الی ${jalaliDate.jy + 5}</th>
+                        </tr>`;
+            } else
+            // route normally to next monthes
+            {
+                jalaliDate.jm++;
+                if (jalaliDate.jm > 12) {
+                    jalaliDate.jm = 1;
+                    jalaliDate.jy++;
+                }
+                generateMiniCalendar(jalaliDate.jy, jalaliDate.jm);
+            }
+        });
+
+
         todayMini.addEventListener('click', function (e) {
             e.preventDefault();
 
@@ -1004,6 +1178,7 @@
             document.getElementById('current-month-mini').innerText = `${getPersianMonthsOfYear(jalaliDate.jm)} ${jalaliDate.jy}`;
         });
 
+        // generate single year with all 12 persian monthes
         function generateYearView(jalaliYear) {
             const monthsOfYear = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
             let rows = '';
@@ -1025,6 +1200,7 @@
             return rows;
         }
 
+        // generate decade view containing current year + 5 previous year and 5 future years
         function generateDecadeView(currentYear) {
             let rows = '';
             const currentJalaliYear = jalaali.toJalaali(new Date()).jy;
@@ -1074,26 +1250,44 @@
                 </tr>`;
         }
 
+        // route to specific date which user is selecting
         document.addEventListener('click', function (event) {
-            event.preventDefault();
-
+            // show selected month in year view
             if (event.target.matches('[data-month]')) {
+                event.preventDefault();
                 const jalaliYear = jalaliDate.jy;
                 const jalaliMonth = parseInt(event.target.getAttribute('data-month'));
                 selectMonth(jalaliYear, jalaliMonth);
-            } else if (event.target.matches('[data-year]')) {
+            } else
+            // show selected year from decade view
+            if (event.target.matches('[data-year]')) {
+                event.preventDefault();
                 const year = parseInt(event.target.getAttribute('data-year'));
                 selectYear(year);
-            } else if (event.target.matches('[data-date]')) {
+            } else
+            // show selected date
+            if (event.target.matches('[data-date]')) {
+                event.preventDefault();
                 const selectedDate = event.target.getAttribute('data-date').split('-');
                 const gregorianDate = new Date(selectedDate[0], selectedDate[1] - 1, selectedDate[2]);
                 jalaliDate = jalaali.toJalaali(gregorianDate.getFullYear(), gregorianDate.getMonth() + 1, gregorianDate.getDate());
                 currentDate = new Date(gregorianDate.getFullYear(), gregorianDate.getMonth(), gregorianDate.getDate());
                 miniCalendarModal.classList.add('hidden');
+
+                // Update startOfWeek and endOfWeek to contain the selected date
+                const { startOfWeek, endOfWeek } = getWeekRange(currentDate);
+                document.getElementById('start-of-week').innerText = formatJalaliDate(startOfWeek, true);
+                document.getElementById('end-of-week').innerText = formatJalaliDate(endOfWeek, false);
+
+                // get current personnel and service values
+                const personnelId = document.querySelector('select[name="personnel_id"]').value;
+                const serviceId = document.querySelector('select[name="service_id"]').value;
+
+                // render schedules for the selected week
+                renderSchedulesForSelectedWeek(personnelId, serviceId, startOfWeek, endOfWeek);
             }
         });
     }
-
 
     // live timer
     function updateLiveTimer() {
@@ -1126,493 +1320,4 @@
     // set date value to live timer
     currentMonthAndYear.innerHTML = `${getPersianDaysOfWeak(new Date().getDay())} ${todayDate.jd} ${getPersianMonthsOfYear(todayDate.jm)}`;
 </script>
-{{-- <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // get data from backend
-        const services = @json(App\Models\MedicalServices::with('personnels')->get());
-        const schedules = @json($schedules);
-        const appointments = @json($appointments);
-
-        // get values from inputs
-        const serviceSelect = document.querySelector('select[name="service_id"]');
-        const personnelSelect = document.querySelector('select[name="personnel_id"]');
-        const appointmentType = document.querySelector('select[name="appointment_type"]');
-        const introducer = document.querySelector('select[name="introducer_id"]');
-        const description = document.querySelector('[name="description"]');
-
-        // all shifts table
-        const leftSideTitle = document.getElementById('left-side-title');
-        const allShifts = document.getElementById('all-shifts');
-        const allShiftsTable = document.getElementById('all-shifts-table');
-        const allShiftsDetails = document.getElementById('all-shifts-details');
-
-        // all shifts table's current, next and prev buttons
-        const prevWeekBtn = document.getElementById('previous-week-btn');
-        const currentWeekBtn = document.getElementById('current-week-btn');
-        const nextWeekBtn = document.getElementById('next-week-btn');
-
-        // creat new section to demonstrate devided visit times of a single shift
-        const timesSection = document.createElement('div');
-        const timesTable = document.createElement('table');
-        const backToShiftBtn = document.createElement('button');
-        const tableTitle = document.getElementById('table-title');
-        const showDevidedTimes = document.createElement('div');
-
-        // submit or cancel buttons
-        const formSubmit = document.getElementById('submit-btns');
-
-        // variable to save selectedServiceId
-        let selectedServiceId;
-
-        // Function to get query parameters from URL
-        function getQueryParams() {
-            const params = {};
-            const queryString = window.location.search.substring(1);
-            const regex = /([^&=]+)=([^&]*)/g;
-            let m;
-            while (m = regex.exec(queryString)) {
-                params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
-            }
-            return params;
-        }
-
-          // selected service
-        serviceSelect.addEventListener('change', function () {
-            selectedServiceId = this.value;
-            const selectedService = services.find(service => service.id == selectedServiceId);
-
-            // Clear existing options
-            personnelSelect.innerHTML = '';
-
-            // display submit btns
-            formSubmit.classList.remove('flex');
-            formSubmit.classList.add('hidden');
-
-            // change shift title
-            leftSideTitle.innerText = 'پرسنل مورد نظر را انتخاب کنید.';
-            leftSideTitle.classList.remove('hidden');
-
-            if (selectedService && selectedService.personnels.length > 0) {
-                const defaultOption = document.createElement('option');
-                defaultOption.textContent = `پرسنل های ارائه دهنده خدمت -> ${selectedService.name}`;
-                defaultOption.selected = true;
-                defaultOption.disabled = true;
-                personnelSelect.appendChild(defaultOption);
-
-                selectedService.personnels.forEach(personnel => {
-                    const option = document.createElement('option');
-                    option.value = personnel.id;
-                    option.textContent = `${personnel.full_name}`;
-
-                    personnelSelect.appendChild(option);
-                });
-            } else {
-                const option = document.createElement('option');
-                option.value = '0';
-                option.textContent = 'موردی یافت نشد';
-                personnelSelect.appendChild(option);
-
-                leftSideTitle.innerText = 'برای پرسنل انتخاب شده خدمتی تعریف نشده است!';
-            }
-
-            toggleTimeDetails();
-
-            allShifts.style.display = 'none';
-            allShiftsDetails.innerHTML = '';
-
-            // replace new selected service to URL
-            const url = new URL(window.location.href);
-            url.searchParams.set('service_id', selectedServiceId);
-            window.history.replaceState({}, '', url);
-        });
-
-        appointmentType.addEventListener('change', function () {
-            const appointmentTypeValue = this.value;
-
-            // replace new selected appointment_type to URL
-            const url = new URL(window.location.href);
-            url.searchParams.set('appointment_type', appointmentTypeValue);
-            window.history.replaceState({}, '', url);
-        });
-
-        personnelSelect.addEventListener('change', function () {
-            const personnelId = this.value;
-            const selectedService = services.find(service => service.id == selectedServiceId);
-            const selectedPersonnelName = selectedService?.personnels.find(personnel => personnel.id == personnelId ? personnel : null);
-
-            let shiftsFoundForPersonnel = false;
-
-            allShiftsDetails.innerHTML = '';
-            leftSideTitle.classList.add('hidden');
-
-            // visiblity of submit btns
-            formSubmit.classList.remove('flex');
-            formSubmit.classList.add('hidden');
-
-            // toggle shift table if user is selecting other peronnel from select box
-            toggleTimeDetails();
-
-            // replace new selected personnel to URL
-            const url = new URL(window.location.href);
-            url.searchParams.set('personnel_id', personnelId);
-            window.history.replaceState({}, '', url);
-
-            if (schedules.length > 0) {
-                schedules.filter(schedule => {
-                    if ((schedule.personnel.id == personnelId) && (schedule.service.id == selectedServiceId)) {
-                        const row = document.createElement('tr');
-                        const identifier = `shift-${schedule.id}`;
-                        shiftsFoundForPersonnel = true;
-
-                        // create a table row
-                        row.classList.add('group', 'cursor-pointer');
-                        row.setAttribute('id', identifier);
-                        row.innerHTML = `
-                            <td class="border p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${schedule.schedule_date}</td>
-                            <td class="border p-4 text-center rounded m-2 group-hover:bg-gray-100 transition "><div class="flex flex-col justify-center items-center"><p>از ساعت: <strong>${schedule.from_date}</strong></p><p>تا ساعت: <strong>${schedule.to_date}</strong></p></div></td>
-                            <td class="border p-4 text-center rounded m-2 group-hover:bg-gray-100 transition">${schedule.room}</td>
-                        `;
-                        allShiftsDetails.appendChild(row);
-                        allShiftsTable.classList.remove('hidden');
-
-                        // show shifts of a schedule
-                        const chosenShift = document.getElementById(identifier);
-
-                        // show times of a shift
-                        chosenShift.addEventListener('click', function () {
-                            // hide all-shifts table
-                            allShiftsTable.classList.add('hidden');
-
-                            // create a button to toggle betweem shifts table and times table
-                            backToShiftBtn.innerHTML = `<button class="bg-blue-500 text-white px-4 py-2 rounded-lg my-4" id="toggle-${schedule.id}">شیفت ها</button>`;
-                            timesSection.appendChild(backToShiftBtn);
-
-                            // add toggle functionality
-                            backToShiftBtn.addEventListener('click', function (e) {
-                                e.preventDefault();
-                                allShiftsTable.classList.remove('hidden');
-                                timesSection.classList.add('hidden');
-
-                                // toggle title
-                                tableTitle.innerText = 'شیفت مورد نظر را انتخاب کنید.';
-
-                                // display submit btns
-                                formSubmit.classList.remove('flex');
-                                formSubmit.classList.add('hidden');
-                            });
-
-                            // create shift's detail table
-                            timesSection.classList.remove('hidden');
-                            timesTable.classList.add('table-auto', 'w-full', 'border-t', 'p-4', 'mt-1');
-                            timesSection.appendChild(timesTable);
-                            const timeDetailsId = `time-details-${schedule.id}`;
-                            timesTable.innerHTML = `
-                                <thead>
-                                    <tr class="bg-gray-600">
-                                        <th class="text-center py-3 border border-gray-300 font-medium text-white">روز و تاریخ</th>
-                                        <th class="text-center py-3 border border-gray-300 font-medium text-white">ساعات ویزیت</th>
-                                        <th class="text-center py-3 border border-gray-300 font-medium text-white">اتاق</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="${timeDetailsId}" >
-                                    <tr>
-                                        <td class="border p-4 text-center rounded m-2">${schedule.schedule_date}</td>
-                                        <td class="border p-4 text-center rounded m-2 "><div class="flex flex-col justify-center items-center"><p>از ساعت: <strong>${schedule.from_date}</strong></p><p>تا ساعت: <strong>${schedule.to_date}</strong></p></div></td>
-                                        <td class="border p-4 text-center rounded m-2">${schedule.room}</td>
-                                    </tr>
-                                </tbody>
-                            `;
-
-                            allShifts.appendChild(timesSection);
-
-                            // change table title
-                            tableTitle.innerText = 'ساعت مورد نظر را انتخاب کنید.';
-
-                        // add times
-                            // devide from_date and to_date by etimated_service_time
-                            services.filter((service) => {
-                                service.personnels.filter(personnel => {
-                                    const fromTime = schedule.from_date.split(':').map(Number);
-                                    const toTime = schedule.to_date.split(':').map(Number);
-                                    const fromMinutes = fromTime[0] * 60 + fromTime[1];
-                                    const toMinutes = toTime[0] * 60 + toTime[1];
-                                    const estimatedTime = parseInt(personnel.pivot.estimated_service_time);
-
-                                    if ((personnel.id == personnelId) && (service.id == selectedServiceId)) {
-                                        const numberOfBadges = (toMinutes - fromMinutes) / estimatedTime;
-
-                                        // select one, deselect others
-                                        let selectedBadge = null;
-
-                                        // add showDevidedTimes to table and reset previous one
-                                        showDevidedTimes.innerHTML = '';
-                                        timesSection.appendChild(showDevidedTimes);
-                                        showDevidedTimes.classList.add("grid", "grid-cols-3", "gap-5", "w-full", 'mt-4');
-
-                                        // create time badges
-                                        for (let i = 0; i <= numberOfBadges; i++) {
-                                            const time = document.createElement('div');
-                                            time.classList.add('flex', 'justify-center', 'items-center', 'group');
-
-                                            // last time
-                                            const lastTimeValue = fromMinutes + (estimatedTime * i);
-
-                                            // convert last time value to hours and minutes
-                                            function convertToTime(value) {
-                                                const hours = Math.floor(value / 60);
-                                                const minutes = value % 60;
-
-                                                return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-                                            }
-
-                                            const lastTime = convertToTime(lastTimeValue);
-
-                                            // create badges
-                                            time.innerHTML = `
-                                                <span class="cursor-pointer time-badge bg-gray-100 text-gray-800 text-md font-medium inline-flex items-center py-2 px-3 flex gap-2 rounded-sm me-2 dark:bg-gray-700 dark:text-gray-400 border border-gray-500 group-hover:bg-gray-400 group-hover:text-gray-200 transition rounded-xl" id="time_${schedule.id}_${i}">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                    </svg>
-                                                    ${lastTime}
-                                                </span>
-                                            `;
-
-
-                                            (function (currentTime, badgeId) {
-                                                const badge = time.querySelector('.time-badge');
-                                                badge.addEventListener('click', function(e) {
-                                                    // Deselect previous badge
-                                                    if (selectedBadge && selectedBadge !== badge) {
-                                                        selectedBadge.innerHTML = `
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                                </svg>
-                                                                ${selectedBadge.innerText}
-                                                        `;
-                                                        selectedBadge.classList.remove('bg-gray-600', 'text-white');
-                                                        selectedBadge.classList.add('bg-gray-100', 'text-gray-800');
-                                                    }
-
-                                                    // Toggle current badge
-                                                    const isSelected = badge.classList.contains('bg-gray-100');
-
-                                                    if (isSelected) {
-                                                        badge.innerHTML = `
-                                                            <input type="hidden" name="time_${schedule.id}" value="${currentTime}">
-                                                            <input type="hidden" name="schedule_id" value="${schedule.id}">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                                                            </svg>
-                                                            ${currentTime}
-                                                        `;
-                                                        badge.classList.add('bg-gray-600', 'text-white');
-                                                        badge.classList.remove('bg-gray-100', 'text-gray-800');
-                                                        selectedBadge = badge;
-
-                                                        // display submit btns
-                                                        formSubmit.classList.add('flex');
-                                                        formSubmit.classList.remove('hidden');
-                                                    } else {
-                                                        badge.innerHTML = `
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                                </svg>
-                                                                ${currentTime}
-                                                            `;
-                                                            badge.classList.remove('bg-gray-600', 'text-white');
-                                                            badge.classList.add('bg-gray-100', 'text-gray-800');
-                                                            selectedBadge = null;
-
-                                                            // display submit btns
-                                                            formSubmit.classList.remove('flex');
-                                                            formSubmit.classList.add('hidden');
-                                                        }
-                                                    });
-
-                                                    // activate time badges if is added to appointment
-                                                    appointments.filter(appointment => {
-                                                        const timeFromDB = appointment.estimated_service_time.split(' ')[1];
-                                                        const reservedTimeValue = `${currentTime}:00`;
-
-                                                        if ((timeFromDB == reservedTimeValue) && (schedule.id == appointment.schedule_id)) {
-                                                            badge.innerHTML = `
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                                                                </svg>
-                                                                ${currentTime}
-                                                            `;
-                                                            badge.disabled = true;
-                                                            badge.classList.add('bg-red-800', 'text-white', 'pointer-events-none', 'opacity-50');
-                                                            badge.classList.remove('bg-gray-100', 'text-gray-800', 'group-hover:bg-gray-400', 'group-hover:text-gray-200', 'transition');
-                                                        }
-                                                    })
-                                            })(lastTime, `time_${schedule.id}_${i}`);
-
-                                            showDevidedTimes.appendChild(time);
-                                        }
-                                    }
-                                });
-                            });
-                        });
-                    }
-                });
-
-                // no shifts found
-                if (! shiftsFoundForPersonnel) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<td colspan="4" class="pt-4">شیفتی برای <strong>${selectedPersonnelName?.full_name}</strong> در خدمت درمانی <strong>${selectedService?.name}</strong> ثبت نشده است.</td>`;
-                    allShiftsDetails.appendChild(row);
-                }
-            } else {
-                // message for selected personnel if there is no shifts added to personnel in other weeks
-                const row = document.createElement('tr');
-                row.innerHTML =  `<td colspan="4" class="pt-4">شیفتی برای <strong>${selectedPersonnelName?.full_name}</strong> در خدمت درمانی <strong>${selectedService?.name}</strong> ثبت نشده است.</td>`;
-                allShiftsDetails.appendChild(row);
-            }
-
-            allShifts.style.display = 'block';
-        });
-
-        // Set initial values from query parameters
-        const queryParams = getQueryParams();
-        if (queryParams.service_id) {
-            serviceSelect.value = queryParams.service_id;
-            serviceSelect.dispatchEvent(new Event('change'));
-        }
-        if (queryParams.appointment_type) {
-            appointmentType.value = queryParams.appointment_type;
-            appointmentType.dispatchEvent(new Event('change'));
-        }
-        if (queryParams.personnel_id) {
-            personnelSelect.value = queryParams.personnel_id;
-            personnelSelect.dispatchEvent(new Event('change'));
-        }
-        if (queryParams.introducer_id) {
-            introducer.value = queryParams.introducer_id;
-            introducer.dispatchEvent(new Event('change'));
-        }
-        if (queryParams.description) {
-            description.value = queryParams.description;
-            description.dispatchEvent(new Event('change'));
-        }
-
-        // navigate through weeks
-        function updateWeekNavigationLinks() {
-            const selectedServiceId = serviceSelect.value;
-            const selectedPersonnelId = personnelSelect.value;
-            const appointmentTypeId = appointmentType.value;
-            const introducerId = introducer.value;
-            const descriptionValue = description.value;
-
-            let prevWeekUrl = `{{ route('appointments.appointment', ['week' => $currentDate->copy()->subWeek()->format('Y-m-d')]) }}&select_patient={{ $chosen_patient->id ?? '' }}`;
-            let nextWeekUrl = `{{ route('appointments.appointment', ['week' => $currentDate->copy()->addWeek()->format('Y-m-d')]) }}&select_patient={{ $chosen_patient->id ?? '' }}`;
-
-            // add selected service
-            if (selectedServiceId) {
-                prevWeekUrl += `&service_id=${selectedServiceId}`;
-                nextWeekUrl += `&service_id=${selectedServiceId}`;
-            }
-
-            // add selected appointment_type
-            if (appointmentTypeId) {
-                prevWeekUrl += `&appointment_type=${appointmentTypeId}`;
-                nextWeekUrl += `&appointment_type=${appointmentTypeId}`;
-            }
-
-            // add selected personnel
-            if (selectedPersonnelId) {
-                prevWeekUrl += `&personnel_id=${selectedPersonnelId}`;
-                nextWeekUrl += `&personnel_id=${selectedPersonnelId}`;
-            }
-
-            // add selected introducer
-            if (introducerId) {
-                prevWeekUrl += `&introducer_id=${introducerId}`;
-                nextWeekUrl += `&introducer_id=${introducerId}`;
-            }
-
-            // add selected description
-            if (descriptionValue) {
-                prevWeekUrl += `&description=${descriptionValue}`;
-                nextWeekUrl += `&description=${descriptionValue}`;
-            }
-
-
-              prevWeekBtn.href = prevWeekUrl;
-              nextWeekBtn.href = nextWeekUrl;
-          }
-
-          // current week
-          currentWeekBtn.addEventListener('click', function () {
-              const selectedServiceId = serviceSelect.value;
-              const selectedPersonnelId = personnelSelect.value;
-              const appointmentTypeId = appointmentType.value;
-              const introducerId = introducer.value;
-              const descriptionValue = description.value;
-              const today = new Date().toISOString().split('T')[0];
-
-              let currentWeekUrl = `{{ route('appointments.appointment', ['week' => '' ]) }}${today}&select_patient={{ $chosen_patient->id ?? '' }}`;
-
-              // add selected service
-              if (selectedServiceId) {
-                  currentWeekUrl += `&service_id=${selectedServiceId}`;
-              }
-
-              // add selected appointment_type
-              if (appointmentTypeId) {
-                  currentWeekUrl += `&appointment_type=${appointmentTypeId}`;
-            }
-
-              // add selected introducer
-              if (introducerId) {
-                  currentWeekUrl += `&introducer_id=${introducerId}`;
-              }
-
-              // add selected description
-              if (descriptionValue) {
-                  currentWeekUrl += `&description=${descriptionValue}`;
-              }
-
-              // add selected personnel
-              if (selectedPersonnelId) {
-                  currentWeekUrl += `&personnel_id=${selectedPersonnelId}`;
-              }
-
-              currentWeekBtn.href = currentWeekUrl;
-          })
-
-          serviceSelect.addEventListener('change', updateWeekNavigationLinks);
-          personnelSelect.addEventListener('change', updateWeekNavigationLinks);
-          appointmentType.addEventListener('change', updateWeekNavigationLinks);
-          introducer.addEventListener('change', updateWeekNavigationLinks);
-          description.addEventListener('change', updateWeekNavigationLinks);
-
-          // Initial update of week navigation links
-          updateWeekNavigationLinks();
-
-          // toggle times grid
-          function toggleTimeDetails() {
-              allShiftsTable.classList.remove('hidden');
-              timesSection.classList.add('hidden');
-
-              // toggle title
-              tableTitle.innerText = 'شیفت مورد نظر را انتخاب کنید.';
-          }
-
-        //   toggle delete button of selected introducer
-        const clearButton = introducer.closest('.relative').querySelector('button');
-        introducer.addEventListener('change', function () {
-            clearButton.classList.remove('hidden');
-        });
-        clearButton.addEventListener('click', function () {
-            introducer.value = '';
-            this.classList.add('hidden');
-
-            // Remove introducer_id from URL
-            const url = new URL(window.location.href);
-            url.searchParams.delete('introducer_id');
-            window.history.replaceState({}, '', url);
-        });
-    });
-</script> --}}
 @endsection

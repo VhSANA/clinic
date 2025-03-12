@@ -71,7 +71,7 @@ class AppointmentController extends Controller
         $identifier = $request['schedule_id'];
 
         // validation
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'patient_id' => ['required', 'exists:patients,id'],
             'service_id' => ['required', 'exists:medical_services,id'],
             'appointment_type' => ['required', 'in:normal,emergency,vip'],
@@ -82,7 +82,7 @@ class AppointmentController extends Controller
                 }
             },
         ],
-            'description' => ['nullable'],
+            'description' => ['nullable', 'min:5'],
             'time_' . $identifier => ['required', new TimeLimitValidation($request['schedule_id'])],
             'schedule_id' => ['required', 'exists:schedules,id']
         ], [
@@ -96,7 +96,29 @@ class AppointmentController extends Controller
             'schedule_id.exists' => 'روز کاری انتخاب شده نامعتبر میباشد',
             'appointment_type.required' => 'انتخاب نوع نوبت الزامیست',
             'appointment_type.exists' => 'نوع نوبت انتخاب شده نامعتبر میباشد',
+            'description.min' => 'توضیحات حداقل باید شامل 5 کراکتر باشد.',
         ]);
+
+        // show validation errors in an alert instantly after routing back to view
+        if ($validator->fails()) {
+            $errors = $validator->errors()->all();
+            Alert::error('خطا!', implode("__", $errors));
+
+            // JSON response
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'validation errors',
+                    'errors' => $errors
+                ], 422);
+            }
+
+            return redirect()->back()
+            ->withErrors($validator)
+            ->withInput()
+            ->with("reservation_validation", [
+                'patient' => $request['patient_id']],
+            );
+        }
 
         // set variables and get realated data
         $patient = Patient::find($request['patient_id']);
@@ -117,7 +139,10 @@ class AppointmentController extends Controller
                     ], 500);
                 }
 
-                return back()->withInput($request->only('select_patient'));
+                // return back with selected patient
+                return back()->withInput()->with("reservation_validation", [
+                    'patient' => $request['patient_id']],
+                );
             }
 
             // prevent from adding duplicated value
@@ -137,13 +162,16 @@ class AppointmentController extends Controller
                     ], 409);
                 }
 
-                return back();
+                // return back with selected patient
+                return back()->withInput()->with("reservation_validation", [
+                    'patient' => $request['patient_id']],
+                );
             }
 
             // check, same patient cannot have another visit time except previous one is passed or paid
             $prevent_new_visit_if_exists = Appointment::where('patient_id', $patient->id)
                                         ->where('schedule_id', $schedule->id)
-                                        ->whereNot('appointment_status_id', 5)
+                                        ->where('appointment_status_id', AppointmentsStatus::where('status', AppointmentStatusEnum::INITIAL_REGISTER->value)->first()->id)
                                         ->exists();
 
             if ($prevent_new_visit_if_exists) {
@@ -162,7 +190,28 @@ class AppointmentController extends Controller
                     ], 500);
                 }
 
-                return back()->withInput($request->only('select_patient'));
+                // return back with selected patient
+                return back()->withInput()->with("reservation_validation", [
+                    'patient' => $request['patient_id']],
+                );
+            }
+
+            // prevent if seleceted personnel is euqual with introducer
+            if ($request['personnel_id'] == $request['introducer_id']) {
+                Alert::error('خطا!', 'پرسنل انتخاب شده نمیتواند با معرف یکسان باشد.');
+
+                // json response
+                if(request()->expectsJson()) {
+                    return response()->json([
+                        'message' => 'تطابق پرسنل انتخابی و معرف.',
+                        'status' => 'error'
+                    ], 500);
+                }
+
+                // return back with selected patient
+                return back()->withInput()->with("reservation_validation", [
+                    'patient' => $request['patient_id']],
+                );
             }
 
             // save to db
