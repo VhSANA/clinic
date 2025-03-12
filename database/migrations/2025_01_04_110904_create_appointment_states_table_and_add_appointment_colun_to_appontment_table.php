@@ -1,5 +1,6 @@
 <?php
 
+use App\AppointmentStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +14,15 @@ return new class extends Migration
     {
         Schema::create('appointment_status', function (Blueprint $table) {
             $table->id();
+            $table->enum('status', [
+                AppointmentStatus::INITIAL_REGISTER->name,
+                AppointmentStatus::FINAL_REGISTER->name,
+                AppointmentStatus::CANCELLED->name,
+                AppointmentStatus::TRANSFORMED->name,
+                AppointmentStatus::COMPLETED->name,
+                AppointmentStatus::IN_QUEUE->name,
+                AppointmentStatus::RETURN_FROM_QUEUE->name,
+            ])->default(AppointmentStatus::INITIAL_REGISTER->name);
             $table->string('status');
             $table->timestamps();
         });

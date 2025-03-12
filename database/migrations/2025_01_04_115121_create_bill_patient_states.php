@@ -1,5 +1,6 @@
 <?php
 
+use App\PatientBillStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,7 +14,11 @@ return new class extends Migration
     {
         Schema::create('bill_patient_states', function (Blueprint $table) {
             $table->id();
-            $table->string('status');
+            $table->enum('status', [
+                PatientBillStatus::ISSUED->name,
+                PatientBillStatus::PAID->name,
+                PatientBillStatus::RETURNED->name,
+            ])->default(PatientBillStatus::ISSUED->name);
             $table->timestamps();
         });
 

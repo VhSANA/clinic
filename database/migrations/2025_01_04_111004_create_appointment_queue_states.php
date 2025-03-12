@@ -1,5 +1,6 @@
 <?php
 
+use App\AppointmentQueueStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,7 +14,10 @@ return new class extends Migration
     {
         Schema::create('appointment_queue_states', function (Blueprint $table) {
             $table->id();
-            $table->string('state');
+            $table->enum('', [
+                AppointmentQueueStatus::IN_QUEUE->name,
+                AppointmentQueueStatus::RECIEVING_SERVICE->name,
+            ])->default(AppointmentQueueStatus::IN_QUEUE->name);
             $table->timestamps();
         });
     }
