@@ -21,7 +21,12 @@
                         <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-lg font-semibold">انتخاب تاریخ</h2>
-                                <button id="close-mini-calendar" class="text-gray-500 hover:text-gray-700">X</button>
+                                <button id="close-mini-calendar" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" type="button">
+                                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                    </svg>
+                                    <span class="sr-only close">Close modal</span>
+                                </button>
                             </div>
                             <!-- Search Box -->
                             <input id="search-date" type="text" placeholder="تاریخ مورد نظر را وارد نمایید. (برای مثال: 1-1-1404)" class="w-full p-2 border rounded mb-4 text-right">

@@ -43,7 +43,12 @@
                                                     <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                                                         <div class="flex justify-between items-center mb-4">
                                                             <h2 class="text-lg font-semibold">انتخاب تاریخ</h2>
-                                                            <button id="close-mini-calendar" class="text-gray-500 hover:text-gray-700">X</button>
+                                                            <button id="close-mini-calendar" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" type="button">
+                                                                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                                                </svg>
+                                                                <span class="sr-only close">Close modal</span>
+                                                            </button>
                                                         </div>
                                                         <!-- Search Box -->
                                                         <input id="search-date" type="text" placeholder="تاریخ مورد نظر را وارد نمایید. (برای مثال: 1-1-1404)" class="w-full p-2 border rounded mb-4 text-right">
@@ -91,7 +96,12 @@
                                                     <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                                                         <div class="flex justify-between items-center mb-4">
                                                             <h2 class="text-lg font-semibold">فیلتر براساس</h2>
-                                                            <button id="close-filter" class="text-gray-500 hover:text-gray-700">X</button>
+                                                            <button id="close-filter" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" type="button">
+                                                                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                                                </svg>
+                                                                <span class="sr-only close">Close modal</span>
+                                                            </button>
                                                         </div>
                                                         <div class="relative w-1/2 mb-4">
                                                             <label for="" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">جستجو پرسنل و عنوان شیفت</label>
@@ -135,7 +145,12 @@
                                                     <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                                                         <div class="flex justify-between items-center mb-4">
                                                             <h2 class="text-lg font-semibold">انتخاب پرسنل</h2>
-                                                            <button id="close-personnel-table" class="text-gray-500 hover:text-gray-700">X</button>
+                                                            <button id="close-personnel-table" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" type="button">
+                                                                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                                                </svg>
+                                                                <span class="sr-only close">Close modal</span>
+                                                            </button>
                                                         </div>
                                                         <!-- Search Box -->
                                                         <div class="flex justify-between gap-5">
@@ -245,9 +260,9 @@
 
             // Function to get the start and end dates of the current week
             function getWeekRange(date) {
-                const day = date.getDay(); // 0 (Sunday) to 6 (Saturday)
+                const day = (date.getDay() + 1) % 7;
                 const startOfWeek = new Date(date);
-                startOfWeek.setDate(date.getDate() - day + (day === 6 ? 0 : -day - 1)); // Adjust to Saturday
+                startOfWeek.setDate(date.getDate() - day); // Adjust to Saturday
                 startOfWeek.setHours(0, 0, 0, 0); // Start of the day
 
                 const endOfWeek = new Date(startOfWeek);
@@ -857,7 +872,6 @@
                 options += `<option disabled selected value="">یکی از خدمات زیر را انتخاب کنید.</option>`;
 
                 personnel.medicalservices.forEach(service => {
-                    console.log(service.pivot.personnel_id , personnel.id, service, personnel)
                     if (service.pivot.personnel_id == personnel.id) {
                         options += `<option value="${service.id}">${service.name}</option>`;
                     }
@@ -885,7 +899,12 @@
                                         <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                                             <div class="flex justify-between items-center mb-4">
                                                 <h2 class="text-lg font-semibold">افزودن شیفت کاری برای ${personnel.full_name}</h2>
-                                                <button id="close-add-schedule-modal-${calendarEntry.id}-${personnel.id}" class="text-gray-500 hover:text-gray-700">X</button>
+                                                <button id="close-add-schedule-modal-${calendarEntry.id}-${personnel.id}" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" type="button">
+                                                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                                    </svg>
+                                                    <span class="sr-only close">Close modal</span>
+                                                </button>
                                             </div>
 
                                             <div id="add-schedule-body-${calendarEntry.id}-${personnel.id}" class="mt-5">
@@ -980,7 +999,12 @@
                             <div class="max-w-4xl w-full bg-white p-6 rounded-lg shadow-lg">
                                 <div class="flex justify-between items-center mb-4">
                                     <h2 class="text-lg font-semibold">ویرایش شیفت کاری ${personnel.full_name}</h2>
-                                    <button id="close-edit-schedule-modal-${schedule.id}" class="text-gray-500 hover:text-gray-700">X</button>
+                                    <button id="close-edit-schedule-modal-${schedule.id}" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm h-8 w-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" type="button">
+                                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                                            </svg>
+                                            <span class="sr-only close">Close modal</span>
+                                        </button>
                                 </div>
 
                                 <div id="edit-schedule-body-${schedule.id}" class="mt-5">
